@@ -10,23 +10,36 @@ $user = new User($db);
 $message = '';
 
 if($_POST){
-    $user->email = $_POST['email'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
     
-    if($user->emailExists()){
-        // En un sistema real, aquí verificaríamos la contraseña
-        // Por ahora, solo verificamos que el email exista
-        
-        Session::init();
-        Session::set('user_logged_in', true);
-        Session::set('user_id', $user->id_usuario);
-        Session::set('user_name', $user->nombre);
-        Session::set('user_email', $user->email);
-        Session::set('user_type', $user->tipo_cuenta);
-        
-        header("Location: dashboard.php");
-        exit();
+    // Validaciones básicas
+    if(empty($email) || empty($password)) {
+        $message = '<div class="alert alert-danger">Por favor, complete todos los campos.</div>';
     } else {
-        $message = '<div class="alert alert-danger">Email no registrado.</div>';
+        $user->email = $email;
+        
+        if($user->emailExists()){
+            // Verificar contraseña
+            if($user->verifyPassword($password)) {
+                Session::init();
+                Session::set('user_logged_in', true);
+                Session::set('user_id', $user->id_usuario);
+                Session::set('user_name', $user->nombre);
+                Session::set('user_email', $user->email);
+                Session::set('user_type', $user->tipo_cuenta);
+                
+                // Actualizar última conexión
+                $user->updateLastConnection();
+                
+                header("Location: dashboard.php");
+                exit();
+            } else {
+                $message = '<div class="alert alert-danger">Contraseña incorrecta.</div>';
+            }
+        } else {
+            $message = '<div class="alert alert-danger">Email no registrado.</div>';
+        }
     }
 }
 ?>
@@ -89,10 +102,12 @@ if($_POST){
                     </div>
                     <div class="login-form">
                         <?php echo $message; ?>
-                        <form method="POST">
+                        <form method="POST" id="loginForm">
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" 
+                                       required>
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
@@ -110,5 +125,26 @@ if($_POST){
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Validación básica del formulario
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if(!email || !password) {
+                e.preventDefault();
+                alert('Por favor, complete todos los campos.');
+                return false;
+            }
+            
+            // Validación básica de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(email)) {
+                e.preventDefault();
+                alert('Por favor, ingrese un email válido.');
+                return false;
+            }
+        });
+    </script>
 </body>
 </html>

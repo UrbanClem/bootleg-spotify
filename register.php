@@ -1,6 +1,7 @@
 <?php
 include 'config/database.php';
 include 'models/User.php';
+include 'config/session.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -11,18 +12,27 @@ $message = '';
 if($_POST){
     $user->nombre = $_POST['nombre'];
     $user->email = $_POST['email'];
-    $user->fecha_nacimiento = $_POST['fecha_nacimiento'];
-    $user->pais = $_POST['pais'];
-
-    // Verificar si el email ya existe
-    if($user->emailExists()){
-        $message = '<div class="alert alert-danger">El email ya está registrado.</div>';
+    $user->password_hash = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    
+    // Validaciones
+    if(empty($user->nombre) || empty($user->email) || empty($user->password_hash)) {
+        $message = '<div class="alert alert-danger">Por favor, complete todos los campos.</div>';
+    } elseif($user->password_hash !== $confirm_password) {
+        $message = '<div class="alert alert-danger">Las contraseñas no coinciden.</div>';
+    } elseif(strlen($user->password_hash) < 6) {
+        $message = '<div class="alert alert-danger">La contraseña debe tener al menos 6 caracteres.</div>';
     } else {
-        // Crear el usuario
-        if($user->create()){
-            $message = '<div class="alert alert-success">Registro exitoso. Ahora puedes iniciar sesión.</div>';
+        // Verificar si el email ya existe
+        if($user->emailExists()) {
+            $message = '<div class="alert alert-danger">Este email ya está registrado.</div>';
         } else {
-            $message = '<div class="alert alert-danger">Error en el registro.</div>';
+            // Crear usuario
+            if($user->create()) {
+                $message = '<div class="alert alert-success">Registro exitoso. <a href="login.php">Iniciar sesión</a></div>';
+            } else {
+                $message = '<div class="alert alert-danger">Error en el registro. Intente nuevamente.</div>';
+            }
         }
     }
 }
@@ -47,7 +57,7 @@ if($_POST){
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             overflow: hidden;
-            max-width: 400px;
+            max-width: 450px;
             width: 100%;
         }
         .register-header {
@@ -82,39 +92,36 @@ if($_POST){
                 <div class="register-container">
                     <div class="register-header">
                         <h2>Crear Cuenta</h2>
-                        <p class="mb-0">Únete a MusicStream</p>
+                        <p class="mb-0">Únete a Spotify Clone</p>
                     </div>
                     <div class="register-form">
                         <?php echo $message; ?>
-                        <form method="POST">
+                        <form method="POST" id="registerForm">
                             <div class="mb-3">
-                                <label for="nombre" class="form-label">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre" required>
+                                <label for="nombre" class="form-label">Nombre completo</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" 
+                                       value="<?php echo isset($_POST['nombre']) ? htmlspecialchars($_POST['nombre']) : ''; ?>" 
+                                       required>
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" 
+                                       required>
                             </div>
                             <div class="mb-3">
-                                <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                                <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                                <label for="password" class="form-label">Contraseña</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <div class="form-text">Mínimo 6 caracteres</div>
                             </div>
                             <div class="mb-3">
-                                <label for="pais" class="form-label">País</label>
-                                <select class="form-control" id="pais" name="pais" required>
-                                    <option value="">Selecciona tu país</option>
-                                    <option value="México">México</option>
-                                    <option value="España">España</option>
-                                    <option value="Argentina">Argentina</option>
-                                    <option value="Colombia">Colombia</option>
-                                    <option value="Chile">Chile</option>
-                                    <option value="Estados Unidos">Estados Unidos</option>
-                                </select>
+                                <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                             </div>
                             <button type="submit" class="btn btn-spotify w-100">Registrarse</button>
                         </form>
                         <div class="login-link">
-                            <p>¿Ya tienes cuenta? <a href="login.php">Inicia sesión</a></p>
+                            <p>¿Ya tienes cuenta? <a href="login.php">Inicia sesión aquí</a></p>
                         </div>
                     </div>
                 </div>
@@ -123,5 +130,24 @@ if($_POST){
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Validación del formulario de registro
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if(password !== confirmPassword) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden.');
+                return false;
+            }
+            
+            if(password.length < 6) {
+                e.preventDefault();
+                alert('La contraseña debe tener al menos 6 caracteres.');
+                return false;
+            }
+        });
+    </script>
 </body>
 </html>

@@ -133,6 +133,29 @@ $user->readOne();
                     </div>
                 </div>
 
+                <!-- Nueva fila para los cards de gestión -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card card-spotify">
+                            <div class="card-body">
+                                <h5 class="card-title">Gestión de Canciones</h5>
+                                <p class="card-text">Agregar y administrar canciones</p>
+                                <a href="songs.php" class="btn btn-spotify">Gestionar Canciones</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card card-spotify">
+                            <div class="card-body">
+                                <h5 class="card-title">Gestión de Álbumes</h5>
+                                <p class="card-text">Administrar álbumes y sus portadas</p>
+                                <a href="albums.php" class="btn btn-spotify">Gestionar Álbumes</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="card card-spotify">
