@@ -109,7 +109,7 @@ $user->readOne();
                             <div class="card-body">
                                 <h5 class="card-title">Mis Playlists</h5>
                                 <p class="card-text">Gestiona tus listas de reproducción</p>
-                                <a href="#" class="btn btn-spotify">Ver Playlists</a>
+                                <a href="playlists.php" class="btn btn-spotify">Ver Playlists</a>
                             </div>
                         </div>
                     </div>
