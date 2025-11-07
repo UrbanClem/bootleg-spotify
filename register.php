@@ -12,18 +12,19 @@ $message = '';
 if($_POST){
     $user->nombre = $_POST['nombre'];
     $user->email = $_POST['email'];
-    $user->password_hash = $_POST['password'];
+    $user->password = $_POST['password']; // Cambiado a ->password
     $confirm_password = $_POST['confirm_password'];
     
     // Validaciones
-    if(empty($user->nombre) || empty($user->email) || empty($user->password_hash)) {
+    if(empty($user->nombre) || empty($user->email) || empty($user->password)) {
         $message = '<div class="alert alert-danger">Por favor, complete todos los campos.</div>';
-    } elseif($user->password_hash !== $confirm_password) {
+    } elseif($user->password !== $confirm_password) {
         $message = '<div class="alert alert-danger">Las contraseñas no coinciden.</div>';
-    } elseif(strlen($user->password_hash) < 6) {
+    } elseif(strlen($user->password) < 6) {
         $message = '<div class="alert alert-danger">La contraseña debe tener al menos 6 caracteres.</div>';
     } else {
         // Verificar si el email ya existe
+        $user->email = $_POST['email'];
         if($user->emailExists()) {
             $message = '<div class="alert alert-danger">Este email ya está registrado.</div>';
         } else {
