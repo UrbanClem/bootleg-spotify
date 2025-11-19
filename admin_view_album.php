@@ -29,7 +29,7 @@ $canciones = $album->getCanciones();
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col-md-12">
-                <a href="albums.php" class="btn btn-secondary mb-3">
+                <a href="admin_albums.php" class="btn btn-secondary mb-3">
                     <i class="fas fa-arrow-left me-2"></i>Volver a Álbumes
                 </a>
             </div>
@@ -60,6 +60,15 @@ $canciones = $album->getCanciones();
                        <?php echo date('d/m/Y', strtotime($album->fecha_lanzamiento)); ?></p>
                     <p><strong><i class="fas fa-music me-2"></i>Género:</strong> <?php echo htmlspecialchars($album->genero); ?></p>
                 </div>
+                
+                <div class="btn-group">
+                    <a href="edit_album.php?id=<?php echo $album->id_album; ?>" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Editar Álbum
+                    </a>
+                    <a href="add_song.php?album_id=<?php echo $album->id_album; ?>" class="btn" style="background: #1db954; color: white;">
+                        <i class="fas fa-plus me-2"></i>Agregar Canción
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -78,6 +87,7 @@ $canciones = $album->getCanciones();
                                     <th>Duración</th>
                                     <th>Popularidad</th>
                                     <th>Audio</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -99,6 +109,11 @@ $canciones = $album->getCanciones();
                                                 <span class="badge bg-warning">Sin audio</span>
                                             <?php endif; ?>
                                         </td>
+                                        <td>
+                                            <a href="edit_song.php?id=<?php echo $cancion['id_cancion']; ?>" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 <?php endwhile; ?>
                             </tbody>
@@ -108,6 +123,10 @@ $canciones = $album->getCanciones();
                     <div class="alert alert-info text-center py-4">
                         <i class="fas fa-music fa-2x mb-3"></i>
                         <h4>No hay canciones en este álbum</h4>
+                        <p class="mb-0">Agrega la primera canción a este álbum.</p>
+                        <a href="add_song.php?album_id=<?php echo $album->id_album; ?>" class="btn mt-3" style="background: #1db954; color: white;">
+                            <i class="fas fa-plus me-2"></i>Agregar Primera Canción
+                        </a>
                     </div>
                 <?php endif; ?>
             </div>

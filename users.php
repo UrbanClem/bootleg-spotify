@@ -3,7 +3,7 @@ include 'config/session.php';
 include 'config/database.php';
 include 'models/User.php';
 
-Session::checkLogin();
+Session::init();
 
 $database = new Database();
 $db = $database->getConnection();

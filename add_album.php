@@ -4,7 +4,7 @@ include 'config/database.php';
 include 'models/Album.php';
 include 'models/Artist.php';
 
-Session::checkLogin();
+Session::init();
 
 $database = new Database();
 $db = $database->getConnection();

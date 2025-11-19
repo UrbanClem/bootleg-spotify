@@ -98,6 +98,9 @@ if($_POST){
                             <a class="nav-link active" href="profile.php">Mi Perfil</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="users.php">Gestión de Usuarios</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="logout.php">Cerrar Sesión</a>
                         </li>
                     </ul>

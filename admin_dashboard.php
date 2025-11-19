@@ -5,11 +5,6 @@ include 'models/User.php';
 
 Session::init();
 
-if (Session::isAdmin()) {
-    header("Location: admin_dashboard.php");
-    exit();
-}
-
 $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);
@@ -85,7 +80,10 @@ $user->readOne();
                             <a class="nav-link active" href="dashboard.php">Inicio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="profile.php">Mi Perfil</a>
+                            <a class="nav-link" href="admin_profile.php">Mi Perfil</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="users.php">Gestión de Usuarios</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="logout.php">Cerrar Sesión</a>
@@ -109,18 +107,18 @@ $user->readOne();
                     <div class="col-md-4">
                         <div class="card card-spotify">
                             <div class="card-body">
-                                <h5 class="card-title">Mis Playlists</h5>
-                                <p class="card-text">Gestiona tus listas de reproducción</p>
-                                <a href="playlists.php" class="btn btn-spotify">Ver Playlists</a>
+                                <h5 class="card-title">Playlists</h5>
+                                <p class="card-text">Gestionar listas de reproducción</p>
+                                <a href="playlists.php" class="btn btn-spotify">Gestionar Playlists</a>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="card card-spotify">
                             <div class="card-body">
-                                <h5 class="card-title">Artistas</h5>
-                                <p class="card-text">Revisa los artistas disponibles en la plataforma</p>
-                                <a href="#" class="btn btn-spotify">Ver Artistas</a>
+                                <h5 class="card-title">Artistas Seguidos</h5>
+                                <p class="card-text">Tus artistas favoritos</p>
+                                <a href="admin_artists.php" class="btn btn-spotify">Ver Artistas</a>
                             </div>
                         </div>
                     </div>
@@ -140,9 +138,9 @@ $user->readOne();
                     <div class="col-md-4">
                         <div class="card card-spotify">
                             <div class="card-body">
-                                <h5 class="card-title">Canciones</h5>
-                                <p class="card-text">Revisa las canciones disponibles en la plataforma</p>
-                                <a href="songs.php" class="btn btn-spotify">Ver Canciones</a>
+                                <h5 class="card-title">Gestión de Canciones</h5>
+                                <p class="card-text">Agregar y administrar canciones</p>
+                                <a href="admin_songs.php" class="btn btn-spotify">Gestionar Canciones</a>
                             </div>
                         </div>
                     </div>
@@ -150,9 +148,9 @@ $user->readOne();
                     <div class="col-md-4">
                         <div class="card card-spotify">
                             <div class="card-body">
-                                <h5 class="card-title">Álbumes</h5>
-                                <p class="card-text">Revisa los álbumes disponibles en la plataforma</p>
-                                <a href="albums.php" class="btn btn-spotify">Ver Álbumes</a>
+                                <h5 class="card-title">Gestión de Álbumes</h5>
+                                <p class="card-text">Administrar álbumes y sus portadas</p>
+                                <a href="admin_albums.php" class="btn btn-spotify">Gestionar Álbumes</a>
                             </div>
                         </div>
                     </div>

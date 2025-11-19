@@ -5,7 +5,7 @@ include 'models/Song.php';
 include 'models/Artist.php';
 include 'models/Album.php';
 
-Session::checkLogin();
+Session::init();
 
 $database = new Database();
 $db = $database->getConnection();
@@ -22,38 +22,22 @@ $albums = $album->read();
 
 $message = '';
 
-// Función para obtener duración del audio (la misma que en add_song.php)
-function getAudioDuration($file_path) {
-    // Opción 1: Usar getID3
-    if(file_exists('vendor/getid3/getid3.php')) {
-        require_once('vendor/getid3/getid3.php');
-        $getID3 = new getID3;
-        $fileInfo = $getID3->analyze($file_path);
-        if(isset($fileInfo['playtime_seconds'])) {
-            return round($fileInfo['playtime_seconds']);
-        }
-    }
-    
-    // Opción 2: Usar FFmpeg (si está disponible)
-    if(function_exists('shell_exec')) {
-        $cmd = "ffmpeg -i " . escapeshellarg($file_path) . " 2>&1";
-        $output = shell_exec($cmd);
-        if(preg_match('/Duration: (\d+):(\d+):(\d+)/', $output, $matches)) {
-            $hours = intval($matches[1]);
-            $minutes = intval($matches[2]);
-            $seconds = intval($matches[3]);
-            return ($hours * 3600) + ($minutes * 60) + $seconds;
-        }
-    }
-    
-    // Opción 3: Fallback a duración actual
-    return 0;
-}
-
 if($_POST){
     // Procesar nuevo archivo de audio si se subió
     $audio_filename = $song->archivo_audio;
-    $duracion = $song->duracion; // Mantener duración actual por defecto
+    
+    // USAR EXCLUSIVAMENTE LA DURACIÓN DEL FORMULARIO (JavaScript)
+    $duracion = isset($_POST['duracion']) ? (int)$_POST['duracion'] : $song->duracion;
+    
+    // Si no hay duración del formulario, usar la manual
+    if($duracion == 0 && isset($_POST['duracion_manual']) && $_POST['duracion_manual'] > 0) {
+        $duracion = (int)$_POST['duracion_manual'];
+    }
+    
+    // Si aún no hay duración, mantener la actual
+    if($duracion == 0) {
+        $duracion = $song->duracion;
+    }
     
     if($_FILES['archivo_audio']['error'] === UPLOAD_ERR_OK) {
         $audio_file = $_FILES['archivo_audio'];
@@ -62,28 +46,18 @@ if($_POST){
         $audio_dest = 'uploads/audio/' . $audio_filename;
         
         if(move_uploaded_file($audio_file['tmp_name'], $audio_dest)) {
-            // Obtener duración automáticamente del nuevo archivo
-            $nueva_duracion = getAudioDuration($audio_dest);
-            
-            if($nueva_duracion > 0) {
-                $duracion = $nueva_duracion;
-                $message .= '<div class="alert alert-info">Nueva duración detectada: ' . gmdate("i:s", $duracion) . '</div>';
-            } else {
-                $message .= '<div class="alert alert-warning">No se pudo detectar la duración del nuevo archivo. Se mantiene la duración anterior.</div>';
+            // CONFIRMAR QUE TENEMOS UNA DURACIÓN VÁLIDA
+            if($duracion > 0 && $duracion != $song->duracion) {
+                $message .= '<div class="alert alert-info">Nueva duración establecida: ' . gmdate("i:s", $duracion) . '</div>';
             }
             
             // Eliminar archivo anterior si existe
-            if(!empty($song->archivo_audio)) {
+            if(!empty($song->archivo_audio) && file_exists('uploads/audio/' . $song->archivo_audio)) {
                 @unlink('uploads/audio/' . $song->archivo_audio);
             }
         } else {
             $message .= '<div class="alert alert-danger">Error al subir el nuevo archivo de audio.</div>';
         }
-    }
-
-    // Si se proporcionó duración manual (fallback)
-    if(isset($_POST['duracion_manual']) && $_POST['duracion_manual'] > 0) {
-        $duracion = $_POST['duracion_manual'];
     }
 
     $song->titulo = $_POST['titulo'];
@@ -96,7 +70,7 @@ if($_POST){
     $song->explicit = isset($_POST['explicit']) ? 1 : 0;
 
     if($song->update()){
-        $message .= '<div class="alert alert-success">Canción actualizada exitosamente.</div>';
+        $message .= '<div class="alert alert-success">Canción actualizada exitosamente. Duración: ' . gmdate("i:s", $duracion) . '</div>';
     } else {
         $message .= '<div class="alert alert-danger">Error al actualizar la canción.</div>';
     }
@@ -132,6 +106,9 @@ if($_POST){
                         <?php endif; ?>
 
                         <form method="POST" enctype="multipart/form-data" id="songForm">
+                            <!-- Campo hidden para la duración -->
+                            <input type="hidden" name="duracion" id="duracionHidden" value="<?php echo $song->duracion; ?>">
+                            
                             <div class="mb-3">
                                 <label class="form-label">Título *</label>
                                 <input type="text" class="form-control" name="titulo" value="<?php echo $song->titulo; ?>" required>
@@ -151,20 +128,21 @@ if($_POST){
                                 <input type="file" class="form-control" name="archivo_audio" id="archivo_audio" accept=".mp3,.wav,.ogg,.m4a,.flac">
                                 <small class="form-text text-muted">
                                     Formatos aceptados: MP3, WAV, OGG, M4A, FLAC<br>
-                                    La duración se detectará automáticamente al subir un nuevo archivo.
+                                    <strong>La duración se detectará automáticamente en tu navegador.</strong>
                                 </small>
                             </div>
                             
                             <!-- Mostrar nueva duración detectada -->
-                            <div class="mb-3 alert alert-info" id="nuevaDuracionInfo" style="display: none;">
-                                <strong>Nueva duración detectada:</strong> <span id="nuevaDuracionTexto"></span>
+                            <div class="mb-3 alert alert-success" id="nuevaDuracionInfo" style="display: none;">
+                                <strong>✓ Nueva duración detectada:</strong> <span id="nuevaDuracionTexto"></span>
+                                <br><small>Esta duración se guardará automáticamente.</small>
                             </div>
                             
                             <!-- Campo de duración manual (como fallback) -->
                             <div class="mb-3" id="duracionManualContainer" style="display: none;">
-                                <label class="form-label">Duración Manual (segundos)</label>
+                                <label class="form-label">Duración Manual (segundos) *</label>
                                 <input type="number" class="form-control" name="duracion_manual" id="duracion_manual" 
-                                       value="<?php echo $song->duracion; ?>" min="1">
+                                       value="<?php echo $song->duracion; ?>" min="1" required>
                                 <small class="form-text text-muted">Usar solo si la detección automática falla</small>
                             </div>
 
@@ -207,10 +185,8 @@ if($_POST){
                                 <label class="form-check-label" for="explicit">Contenido Explícito</label>
                             </div>
                             
-                            <input type="hidden" name="duracion" id="duracionHidden" value="<?php echo $song->duracion; ?>">
-                            
                             <button type="submit" class="btn" style="background: #1db954; color: white;" id="submitBtn">Actualizar Canción</button>
-                            <a href="songs.php" class="btn btn-secondary">Volver</a>
+                            <a href="admin_songs.php" class="btn btn-secondary">Volver</a>
                         </form>
                     </div>
                 </div>
@@ -219,6 +195,7 @@ if($_POST){
     </div>
 
     <script>
+        // Detectar duración del audio usando JavaScript
         document.getElementById('archivo_audio').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const submitBtn = document.getElementById('submitBtn');
@@ -243,23 +220,34 @@ if($_POST){
                         
                         // Ocultar campo manual si la detección funciona
                         duracionManualContainer.style.display = 'none';
+                        document.getElementById('duracion_manual').required = false;
+                        
+                        console.log('Duración detectada:', duracion, 'segundos');
                     } else {
                         nuevaDuracionInfo.style.display = 'none';
                         // Mostrar campo manual como fallback
                         duracionManualContainer.style.display = 'block';
+                        document.getElementById('duracion_manual').required = true;
                         alert('No se pudo detectar la duración automáticamente. Por favor, ingresa la duración manualmente.');
                     }
                     
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Actualizar Canción';
+                    
+                    // Liberar memoria
+                    URL.revokeObjectURL(audio.src);
                 };
                 
                 audio.onerror = function() {
                     nuevaDuracionInfo.style.display = 'none';
                     duracionManualContainer.style.display = 'block';
+                    document.getElementById('duracion_manual').required = true;
                     alert('Error al cargar el archivo de audio. Por favor, verifica que el archivo sea válido o ingresa la duración manualmente.');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Actualizar Canción';
+                    
+                    // Liberar memoria
+                    URL.revokeObjectURL(audio.src);
                 };
                 
                 audio.src = URL.createObjectURL(file);
@@ -267,6 +255,8 @@ if($_POST){
                 // Si no se selecciona archivo, ocultar los mensajes
                 nuevaDuracionInfo.style.display = 'none';
                 duracionManualContainer.style.display = 'none';
+                document.getElementById('duracion_manual').required = false;
+                document.getElementById('duracionHidden').value = '<?php echo $song->duracion; ?>';
             }
         });
         
@@ -276,10 +266,28 @@ if($_POST){
             return minutes + ':' + (remainingSeconds < 10 ? '0' : '') + remainingSeconds;
         }
         
-        // Mostrar/ocultar campo manual basado en si hay archivo seleccionado
-        document.getElementById('songForm').addEventListener('reset', function() {
-            document.getElementById('nuevaDuracionInfo').style.display = 'none';
-            document.getElementById('duracionManualContainer').style.display = 'none';
+        // Validar formulario antes de enviar si hay nuevo archivo
+        document.getElementById('songForm').addEventListener('submit', function(e) {
+            const archivoAudio = document.getElementById('archivo_audio').value;
+            const duracion = document.getElementById('duracionHidden').value;
+            const duracionManual = document.getElementById('duracion_manual').value;
+            const duracionManualContainer = document.getElementById('duracionManualContainer');
+            
+            if (archivoAudio) {
+                if (!duracion && !duracionManual) {
+                    e.preventDefault();
+                    alert('Por favor, espera a que se detecte la duración del audio o ingrésala manualmente.');
+                    duracionManualContainer.style.display = 'block';
+                    document.getElementById('duracion_manual').required = true;
+                    document.getElementById('duracion_manual').focus();
+                } else if (duracionManual && (!duracion || duracion == '<?php echo $song->duracion; ?>')) {
+                    // Si se ingresó duración manual, usarla
+                    document.getElementById('duracionHidden').value = duracionManual;
+                }
+            }
+            
+            // Debug: mostrar valores que se enviarán
+            console.log('Enviando - Duración:', document.getElementById('duracionHidden').value);
         });
     </script>
 </body>

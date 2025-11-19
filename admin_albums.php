@@ -12,6 +12,22 @@ $album = new Album($db);
 // Leer álbumes
 $stmt = $album->read();
 $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Mostrar mensajes
+if(isset($_GET['message'])) {
+    $messages = [
+        'created' => 'Álbum creado exitosamente.',
+        'updated' => 'Álbum actualizado exitosamente.',
+        'deleted' => 'Álbum eliminado exitosamente.'
+    ];
+    
+    if(isset($messages[$_GET['message']])) {
+        echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+                ' . $messages[$_GET['message']] . '
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>';
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -50,13 +66,16 @@ $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col-md-12">
-                <a href="dashboard.php" class="btn btn-secondary mb-3">
+                <a href="admin_dashboard.php" class="btn btn-secondary mb-3">
                     <i class="fas fa-arrow-left me-2"></i>Volver a Dashboard
                 </a>
             </div>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-compact-disc me-2"></i>Álbumes</h2>
+            <h2><i class="fas fa-compact-disc me-2"></i>Gestión de Álbumes</h2>
+            <a href="add_album.php" class="btn" style="background: #1db954; color: white;">
+                <i class="fas fa-plus me-2"></i>Nuevo Álbum
+            </a>
         </div>
 
         <!-- Barra de búsqueda -->
@@ -96,8 +115,15 @@ $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </p>
                                 
                                 <div class="btn-group w-100">
-                                    <a href="view_album.php?id=<?php echo $albumItem['id_album']; ?>" class="btn btn-sm btn-info">
+                                    <a href="admin_view_album.php?id=<?php echo $albumItem['id_album']; ?>" class="btn btn-sm btn-info">
                                         <i class="fas fa-eye me-1"></i>Ver
+                                    </a>
+                                    <a href="edit_album.php?id=<?php echo $albumItem['id_album']; ?>" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit me-1"></i>Editar
+                                    </a>
+                                    <a href="delete_album.php?id=<?php echo $albumItem['id_album']; ?>" class="btn btn-sm btn-danger" 
+                                       onclick="return confirm('¿Estás seguro de eliminar este álbum?')">
+                                        <i class="fas fa-trash me-1"></i>Eliminar
                                     </a>
                                 </div>
                             </div>
@@ -109,7 +135,6 @@ $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="alert alert-info text-center py-4">
                         <i class="fas fa-compact-disc fa-2x mb-3"></i>
                         <h4>No hay álbumes registrados</h4>
-                
                     </div>
                 </div>
             <?php endif; ?>

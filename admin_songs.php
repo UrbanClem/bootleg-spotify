@@ -12,6 +12,14 @@ $songModel = new Song($db); // Cambiamos el nombre para evitar conflicto
 // Leer canciones
 $stmt = $songModel->read();
 $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en un array
+
+// Mostrar mensaje si se eliminó una canción
+if(isset($_GET['message']) && $_GET['message'] == 'deleted') {
+    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            Canción eliminada exitosamente.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>';
+}
 ?>
 
 <!DOCTYPE html>
@@ -57,13 +65,16 @@ $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en u
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col-md-12">
-                <a href="dashboard.php" class="btn btn-secondary mb-3">
+                <a href="admin_dashboard.php" class="btn btn-secondary mb-3">
                     <i class="fas fa-arrow-left me-2"></i>Volver a Dashboard
                 </a>
             </div>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-music me-2"></i>Canciones</h2>
+            <h2><i class="fas fa-music me-2"></i>Gestión de Canciones</h2>
+            <a href="add_song.php" class="btn" style="background: #1db954; color: white;">
+                <i class="fas fa-plus me-2"></i>Agregar Nueva Canción
+            </a>
         </div>
 
         <!-- Barra de búsqueda -->
@@ -120,6 +131,16 @@ $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en u
                                         <small><i class="fas fa-exclamation-triangle me-1"></i>No hay archivo de audio</small>
                                     </div>
                                 <?php endif; ?>
+                                
+                                <div class="btn-group w-100">
+                                    <a href="edit_song.php?id=<?php echo $songItem['id_cancion']; ?>" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit me-1"></i>Editar
+                                    </a>
+                                    <a href="delete_song.php?id=<?php echo $songItem['id_cancion']; ?>" class="btn btn-sm btn-danger" 
+                                       onclick="return confirm('¿Estás seguro de eliminar esta canción?')">
+                                        <i class="fas fa-trash me-1"></i>Eliminar
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
