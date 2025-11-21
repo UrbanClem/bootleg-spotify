@@ -24,6 +24,28 @@ $canciones = $album->getCanciones();
     <title><?php echo $album->titulo; ?> - Spotify Clone</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .btn-spotify {
+            background: #1db954;
+            color: white;
+            border: none;
+        }
+        .btn-spotify:hover {
+            background: #1ed760;
+            color: white;
+        }
+        .btn-spotify-sm {
+            background: #1db954;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .btn-spotify-sm:hover {
+            background: #1ed760;
+            color: white;
+        }
+    </style>
 </head>
 <body style="background: #191414; color: white; min-height: 100vh;">
     <div class="container mt-4">
@@ -86,7 +108,6 @@ $canciones = $album->getCanciones();
                                     <th>Título</th>
                                     <th>Duración</th>
                                     <th>Popularidad</th>
-                                    <th>Audio</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -101,18 +122,20 @@ $canciones = $album->getCanciones();
                                             <span class="badge bg-success"><?php echo $cancion['popularidad']; ?></span>
                                         </td>
                                         <td>
-                                            <?php if(!empty($cancion['archivo_audio'])): ?>
-                                                <audio controls style="height: 30px;">
-                                                    <source src="uploads/audio/<?php echo $cancion['archivo_audio']; ?>" type="audio/mpeg">
-                                                </audio>
-                                            <?php else: ?>
-                                                <span class="badge bg-warning">Sin audio</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="edit_song.php?id=<?php echo $cancion['id_cancion']; ?>" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                            <div class="btn-group">
+                                                <?php if(!empty($cancion['archivo_audio'])): ?>
+                                                    <button class="btn btn-spotify-sm play-song-btn me-1" 
+                                                            data-song-src="uploads/audio/<?php echo $cancion['archivo_audio']; ?>"
+                                                            data-song-title="<?php echo htmlspecialchars($cancion['titulo']); ?>"
+                                                            data-song-artist="<?php echo htmlspecialchars($album->nombre_artista); ?>"
+                                                            data-song-cover="<?php echo !empty($album->portada) ? 'uploads/images/' . $album->portada : 'assets/default-cover.jpg'; ?>">
+                                                        <i class="fas fa-play"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <a href="edit_song.php?id=<?php echo $cancion['id_cancion']; ?>" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>
@@ -134,5 +157,26 @@ $canciones = $album->getCanciones();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para el reproductor global -->
+    <script>
+    // Agregar event listeners a los botones de reproducción
+    document.querySelectorAll('.play-song-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const songData = {
+                src: this.dataset.songSrc,
+                title: this.dataset.songTitle,
+                artist: this.dataset.songArtist,
+                cover: this.dataset.songCover
+            };
+            
+            if (window.playSong) {
+                window.playSong(songData);
+            }
+        });
+    });
+    </script>
+    
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

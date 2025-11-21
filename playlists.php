@@ -88,6 +88,9 @@ $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="container">
         <div class="row">
             <div class="col-12">
+                <a href="dashboard.php" class="btn btn-secondary mb-3">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a Dashboard
+                </a>
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="text-white">Mis Playlists</h1>
                     <button class="btn btn-spotify" data-bs-toggle="modal" data-bs-target="#createPlaylistModal">
@@ -174,5 +177,6 @@ $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

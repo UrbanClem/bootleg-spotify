@@ -44,12 +44,14 @@ $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en u
             align-items: center;
             justify-content: center;
         }
-        audio {
-            border-radius: 25px;
-            height: 40px;
-        }
-        audio::-webkit-media-controls-panel {
+        .btn-spotify {
             background: #1db954;
+            color: white;
+            border: none;
+        }
+        .btn-spotify:hover {
+            background: #1ed760;
+            color: white;
         }
     </style>
 </head>
@@ -107,14 +109,15 @@ $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en u
                                     <strong><i class="fas fa-fire me-1"></i>Popularidad:</strong> <?php echo $songItem['popularidad']; ?>
                                 </p>
                                 
-                                <!-- Reproductor de audio -->
+                                <!-- Botón de reproducción para el reproductor global -->
                                 <?php if(!empty($songItem['archivo_audio'])): ?>
-                                    <div class="mb-3">
-                                        <audio controls style="width: 100%;">
-                                            <source src="uploads/audio/<?php echo $songItem['archivo_audio']; ?>" type="audio/mpeg">
-                                            Tu navegador no soporta el elemento de audio.
-                                        </audio>
-                                    </div>
+                                    <button class="btn btn-sm btn-spotify play-song-btn w-100" 
+                                            data-song-src="uploads/audio/<?php echo $songItem['archivo_audio']; ?>"
+                                            data-song-title="<?php echo htmlspecialchars($songItem['titulo']); ?>"
+                                            data-song-artist="<?php echo htmlspecialchars($songItem['nombre_artista']); ?>"
+                                            data-song-cover="<?php echo !empty($songItem['portada_album']) ? 'uploads/images/' . $songItem['portada_album'] : 'assets/default-cover.jpg'; ?>">
+                                        <i class="fas fa-play"></i> Reproducir
+                                    </button>
                                 <?php else: ?>
                                     <div class="alert alert-warning text-center py-2">
                                         <small><i class="fas fa-exclamation-triangle me-1"></i>No hay archivo de audio</small>
@@ -129,7 +132,6 @@ $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en u
                     <div class="alert alert-info text-center py-4">
                         <i class="fas fa-music fa-2x mb-3"></i>
                         <h4>No hay canciones registradas</h4>
-                        </a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -137,5 +139,26 @@ $songs = $stmt->fetchAll(PDO::FETCH_ASSOC); // Guardar todos los resultados en u
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para el reproductor global -->
+    <script>
+    // Agregar event listeners a los botones de reproducción
+    document.querySelectorAll('.play-song-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const songData = {
+                src: this.dataset.songSrc,
+                title: this.dataset.songTitle,
+                artist: this.dataset.songArtist,
+                cover: this.dataset.songCover
+            };
+            
+            if (window.playSong) {
+                window.playSong(songData);
+            }
+        });
+    });
+    </script>
+    
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

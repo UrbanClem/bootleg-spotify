@@ -264,5 +264,6 @@ if($_POST){
             }
         });
     </script>
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

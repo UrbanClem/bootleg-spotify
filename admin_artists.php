@@ -364,5 +364,6 @@ $artists = $stmt->fetchAll(PDO::FETCH_ASSOC);
             document.querySelector('.upload-area p').textContent = fileName;
         });
     </script>
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

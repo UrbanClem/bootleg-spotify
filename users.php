@@ -344,5 +344,6 @@ if($keywords) {
             document.getElementById('edit_pais').value = button.getAttribute('data-pais');
         });
     </script>
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

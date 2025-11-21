@@ -118,5 +118,6 @@ if($_POST){
             </div>
         </div>
     </div>
+    <?php include 'components/player.php'; ?>
 </body>
 </html> 

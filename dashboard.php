@@ -120,7 +120,7 @@ $user->readOne();
                             <div class="card-body">
                                 <h5 class="card-title">Artistas</h5>
                                 <p class="card-text">Revisa los artistas disponibles en la plataforma</p>
-                                <a href="#" class="btn btn-spotify">Ver Artistas</a>
+                                <a href="artists.php" class="btn btn-spotify">Ver Artistas</a>
                             </div>
                         </div>
                     </div>
@@ -194,5 +194,6 @@ $user->readOne();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include 'components/player.php'; ?>
 </body>
 </html>

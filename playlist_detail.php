@@ -106,6 +106,17 @@ $all_songs = $all_songs_stmt->fetchAll(PDO::FETCH_ASSOC);
         .btn-spotify:hover {
             background: #1ed760;
         }
+        .btn-spotify-sm {
+            background: #1db954;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .btn-spotify-sm:hover {
+            background: #1ed760;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -183,11 +194,11 @@ $all_songs = $all_songs_stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <div class="col-md-1 text-center">
                                             <span class="text-muted"><?php echo $song_item['orden']; ?></span>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-5">
                                             <h6 class="mb-1"><?php echo htmlspecialchars($song_item['titulo']); ?></h6>
                                             <p class="mb-0 text-muted"><?php echo htmlspecialchars($song_item['nombre_artista']); ?></p>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <span class="text-muted">
                                                 <?php 
                                                     $minutes = floor($song_item['duracion'] / 60);
@@ -196,7 +207,16 @@ $all_songs = $all_songs_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 ?>
                                             </span>
                                         </div>
-                                        <div class="col-md-2 text-end">
+                                        <div class="col-md-4 text-end">
+                                            <?php if(!empty($song_item['archivo_audio'])): ?>
+                                                <button class="btn btn-spotify-sm play-song-btn me-2" 
+                                                        data-song-src="uploads/audio/<?php echo $song_item['archivo_audio']; ?>"
+                                                        data-song-title="<?php echo htmlspecialchars($song_item['titulo']); ?>"
+                                                        data-song-artist="<?php echo htmlspecialchars($song_item['nombre_artista']); ?>"
+                                                        data-song-cover="<?php echo !empty($song_item['portada_album']) ? 'uploads/images/' . $song_item['portada_album'] : 'assets/default-cover.jpg'; ?>">
+                                                    <i class="fas fa-play"></i> Reproducir
+                                                </button>
+                                            <?php endif; ?>
                                             <a href="?id=<?php echo $playlist_id; ?>&remove_song=<?php echo $song_item['id_cancion']; ?>" 
                                                class="btn btn-sm btn-danger"
                                                onclick="return confirm('¿Estás seguro de remover esta canción?')">
@@ -219,5 +239,26 @@ $all_songs = $all_songs_stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para el reproductor global -->
+    <script>
+    // Agregar event listeners a los botones de reproducción
+    document.querySelectorAll('.play-song-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const songData = {
+                src: this.dataset.songSrc,
+                title: this.dataset.songTitle,
+                artist: this.dataset.songArtist,
+                cover: this.dataset.songCover
+            };
+            
+            if (window.playSong) {
+                window.playSong(songData);
+            }
+        });
+    });
+    </script>
+    
+    <?php include 'components/player.php'; ?>
 </body>
 </html>
