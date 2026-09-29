@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api';
 
 export const AuthContext = createContext();
@@ -71,7 +71,12 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {/*
+        Children always render. Gating them on `loading` produced a blank
+        screen for the whole duration of the `/auth/me` round-trip; the router
+        shows a spinner while it waits instead.
+      */}
+      {children}
     </AuthContext.Provider>
   );
 }

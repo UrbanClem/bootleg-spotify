@@ -4,8 +4,12 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { PlayerProvider } from './context/PlayerContext';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './index.css';
+
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/layout.css';
+import './styles/components.css';
+import './styles/pages.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

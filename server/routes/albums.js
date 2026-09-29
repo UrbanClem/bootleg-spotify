@@ -41,8 +41,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
         // Get songs in album
         const [songs] = await pool.query(`
-            SELECT c.id_cancion, c.titulo, c.duracion, c.popularidad, c.archivo_audio, c.explicit
+            SELECT c.id_cancion, c.titulo, c.duracion, c.popularidad, c.archivo_audio, c.explicit,
+                   c.id_artista, c.id_album, c.fecha_lanzamiento,
+                   ar.nombre_artista, al.portada as portada_album
             FROM cancion c
+            LEFT JOIN artista ar ON c.id_artista = ar.id_artista
+            LEFT JOIN album al ON c.id_album = al.id_album
             WHERE c.id_album = ?
             ORDER BY c.titulo
         `, [req.params.id]);

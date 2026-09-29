@@ -27,8 +27,11 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
+        // `salt` is a legacy column: bcrypt embeds its own salt inside
+        // `password_hash`, so it is stored empty (as the seeded rows do).
+        // It is still NOT NULL, so it has to be named explicitly.
         const [result] = await pool.query(
-            'INSERT INTO usuario (nombre, email, password_hash, fecha_registro, tipo_cuenta, saldo, fecha_nacimiento, pais) VALUES (?, ?, ?, CURDATE(), "Free", 0.00, "1990-01-01", "Desconocido")',
+            'INSERT INTO usuario (nombre, email, password_hash, salt, fecha_registro, tipo_cuenta, saldo, fecha_nacimiento, pais) VALUES (?, ?, ?, "", CURDATE(), "Free", 0.00, "1990-01-01", "Desconocido")',
             [nombre, email, passwordHash]
         );
 

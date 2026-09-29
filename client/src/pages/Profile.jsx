@@ -1,196 +1,243 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
+import { Alert } from '../components/Feedback';
+import { GridIcon, LogOutIcon } from '../components/icons';
+import { errorMessage, formatDate, toIsoDate } from '../utils';
 
+/**
+ * Account overview.
+ *
+ * The update endpoint writes every profile column it accepts, so the form
+ * always submits the full set (birth date and country included) rather than
+ * only the fields the user touched — otherwise saving would blank them out.
+ */
 export default function Profile() {
-  const { user, updateUser } = useAuth();
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
+  const { user, logout, updateUser, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const userId = user?.id_usuario;
+
+  const [form, setForm] = useState({
+    nombre: user?.nombre ?? '',
+    email: user?.email ?? '',
     fecha_nacimiento: '',
-    pais: '',
+    pais: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        nombre: user.nombre || '',
-        email: user.email || '',
-        fecha_nacimiento: user.fecha_nacimiento
-          ? new Date(user.fecha_nacimiento).toISOString().split('T')[0]
-          : '',
-        pais: user.pais || '',
-      });
-    }
-  }, [user]);
+    if (!userId) return undefined;
+    let alive = true;
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    api
+      .get(`/users/${userId}`)
+      .then(({ data }) => {
+        if (!alive) return;
+        setForm({
+          nombre: data.nombre ?? '',
+          email: data.email ?? '',
+          fecha_nacimiento: toIsoDate(data.fecha_nacimiento),
+          pais: data.pais ?? ''
+        });
+      })
+      .catch(() => {
+        // Non-fatal: fall back to whatever the session already told us.
+      });
+
+    api
+      .get('/playlists')
+      .then(({ data }) =>
+        alive &&
+        setStats({
+          playlists: data.length,
+          canciones: data.reduce((sum, p) => sum + (p.total_canciones ?? 0), 0)
+        })
+      )
+      .catch(() => {});
+
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+
+  const update = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setNotice(null);
   };
 
-  const handleSubmit = async (e) => {
+  const save = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
+    setBusy(true);
+    setNotice(null);
     try {
-      const response = await api.put(`/users/${user.id_usuario}`, formData);
-      setMessage({ type: 'success', text: response.data.message || 'Profile updated successfully!' });
-      // Update user in context
-      updateUser({ ...user, ...formData });
-    } catch (error) {
-      setMessage({
-        type: 'danger',
-        text: error.response?.data?.error || 'Error updating profile',
+      await api.put(`/users/${userId}`, {
+        nombre: form.nombre.trim(),
+        email: form.email.trim(),
+        fecha_nacimiento: form.fecha_nacimiento || null,
+        pais: form.pais.trim() || null
       });
+      updateUser({ ...user, nombre: form.nombre, email: form.email });
+      setEditing(false);
+      setNotice({ type: 'success', text: 'Perfil actualizado.' });
+    } catch (err) {
+      setNotice({ type: 'error', text: errorMessage(err, 'No se pudo guardar el perfil.') });
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
   };
 
-  const countries = ['México', 'España', 'Argentina', 'Colombia'];
+  const initials = (user?.nombre ?? '?').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="container">
-      <div className="row mb-4">
-        <div className="col">
-          <h1 className="display-5 fw-bold">Your Profile</h1>
-          <p className="text-muted">Manage your account information</p>
+    <div className="page">
+      <div className="profile-head">
+        <div
+          className="profile-avatar"
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            background: 'var(--cover-0)'
+          }}
+        >
+          <span style={{ fontSize: 72, fontWeight: 900, color: 'rgba(255,255,255,.9)' }}>
+            {initials}
+          </span>
+        </div>
+        <div>
+          <h1 className="profile-name">{user?.nombre}</h1>
+          <p className="hero-sub" style={{ marginTop: 12 }}>
+            <span>{user?.email}</span>
+            <span className="dot">•</span>
+            <span>{isAdmin ? 'Administrador' : 'Usuario Premium'}</span>
+          </p>
+          {user?.fecha_registro && (
+            <p className="hero-note" style={{ marginTop: 6 }}>
+              Miembro desde {formatDate(user.fecha_registro)}
+            </p>
+          )}
         </div>
       </div>
 
-      {message.text && (
-        <div className={`alert alert-${message.type} alert-dismissible fade show`} role="alert">
-          {message.text}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setMessage({ type: '', text: '' })}
-          ></button>
+      {notice && (
+        <div style={{ padding: '0 var(--page-pad)', marginBottom: 16 }}>
+          <Alert variant={notice.type} onDismiss={() => setNotice(null)}>
+            {notice.text}
+          </Alert>
         </div>
       )}
 
-      <div className="row">
-        <div className="col-md-8">
-          <div className="card bg-secondary bg-opacity-25 border-secondary text-white mb-4">
-            <div className="card-header bg-transparent border-secondary">
-              <h5 className="mb-0">Edit Profile</h5>
-            </div>
-            <div className="card-body">
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="nombre" className="form-label">Nombre</label>
-                  <input
-                    type="text"
-                    className="form-control bg-dark text-white border-secondary"
-                    id="nombre"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className="form-control bg-dark text-white border-secondary"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="fecha_nacimiento" className="form-label">Fecha de Nacimiento</label>
-                  <input
-                    type="date"
-                    className="form-control bg-dark text-white border-secondary"
-                    id="fecha_nacimiento"
-                    name="fecha_nacimiento"
-                    value={formData.fecha_nacimiento}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="pais" className="form-label">País</label>
-                  <select
-                    className="form-select bg-dark text-white border-secondary"
-                    id="pais"
-                    name="pais"
-                    value={formData.pais}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select a country</option>
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-success"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Changes'
-                  )}
-                </button>
-              </form>
-            </div>
+      <div className="detail-grid">
+        <div className="panel">
+          <div className="panel-head">
+            <h2 className="panel-title">Información de la cuenta</h2>
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => setEditing((v) => !v)}
+            >
+              {editing ? 'Cancelar' : 'Editar'}
+            </button>
           </div>
+
+          {editing ? (
+            <form className="stack" onSubmit={save}>
+              <label className="field">
+                <span className="field-label">Nombre</span>
+                <input
+                  className="input"
+                  value={form.nombre}
+                  onChange={update('nombre')}
+                  maxLength={100}
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span className="field-label">Correo</span>
+                <input
+                  className="input"
+                  type="email"
+                  value={form.email}
+                  onChange={update('email')}
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span className="field-label">Fecha de nacimiento</span>
+                <input
+                  className="input"
+                  type="date"
+                  value={form.fecha_nacimiento}
+                  onChange={update('fecha_nacimiento')}
+                />
+              </label>
+
+              <label className="field">
+                <span className="field-label">País</span>
+                <input
+                  className="input"
+                  value={form.pais}
+                  onChange={update('pais')}
+                  placeholder="España"
+                  maxLength={60}
+                />
+              </label>
+
+              <div>
+                <button type="submit" className="btn btn--primary" disabled={busy}>
+                  {busy ? 'Guardando…' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <dl className="definition-list">
+              <dt>Nombre</dt>
+              <dd>{form.nombre || '—'}</dd>
+              <dt>Correo</dt>
+              <dd>{form.email || '—'}</dd>
+              <dt>Tipo de cuenta</dt>
+              <dd>{isAdmin ? 'Administrador' : 'Premium'}</dd>
+              <dt>Fecha de nacimiento</dt>
+              <dd>{form.fecha_nacimiento ? formatDate(form.fecha_nacimiento) : '—'}</dd>
+              <dt>País</dt>
+              <dd>{form.pais || '—'}</dd>
+              <dt>Miembro desde</dt>
+              <dd>{user?.fecha_registro ? formatDate(user.fecha_registro) : '—'}</dd>
+            </dl>
+          )}
         </div>
 
-        <div className="col-md-4">
-          <div className="card bg-secondary bg-opacity-25 border-secondary text-white">
-            <div className="card-header bg-transparent border-secondary">
-              <h5 className="mb-0">Account Info</h5>
+        <div className="stack">
+          <div className="stat-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <div className="stat">
+              <div className="stat-label">Playlists</div>
+              <div className="stat-value">{stats ? stats.playlists : '—'}</div>
             </div>
-            <div className="card-body">
-              <table className="table table-dark table-borderless mb-0">
-                <tbody>
-                  <tr>
-                    <td className="text-muted">Tipo de Cuenta</td>
-                    <td className="text-end">
-                      <span className="badge bg-success">{user?.tipo_cuenta || 'Free'}</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-muted">Fecha de Registro</td>
-                    <td className="text-end">{formatDate(user?.fecha_registro)}</td>
-                  </tr>
-                  <tr>
-                    <td className="text-muted">Saldo</td>
-                    <td className="text-end text-success fw-bold">
-                      ${parseFloat(user?.saldo || 0).toFixed(2)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="stat">
+              <div className="stat-label">Canciones guardadas</div>
+              <div className="stat-value">{stats ? stats.canciones : '—'}</div>
             </div>
           </div>
+
+          {isAdmin && (
+            <Link className="btn btn--ghost btn--block" to="/admin">
+              <GridIcon size={16} /> Panel de administración
+            </Link>
+          )}
+
+          <button type="button" className="btn btn--danger btn--block" onClick={handleLogout}>
+            <LogOutIcon size={16} /> Cerrar sesión
+          </button>
         </div>
       </div>
     </div>

@@ -1,139 +1,102 @@
-import { useState, useEffect, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from '../../api';
-import { AuthContext } from '../../context/AuthContext';
+import api from '../../api';
+import { Alert, Spinner } from '../../components/Feedback';
+import { errorMessage } from '../../utils';
 
-const AdminDashboard = () => {
-    const { user } = useContext(AuthContext);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [stats, setStats] = useState({
-        songs: 0,
-        albums: 0,
-        artists: 0,
-        users: 0
-    });
+const TILES = [
+  { key: 'songs', label: 'Canciones', to: '/admin/songs', icon: '♫' },
+  { key: 'albums', label: 'Álbumes', to: '/admin/albums', icon: '◉' },
+  { key: 'artists', label: 'Artistas', to: '/admin/artists', icon: '☺' },
+  { key: 'users', label: 'Usuarios', to: '/admin/users', icon: '⚑' }
+];
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const [songsRes, albumsRes, artistsRes, usersRes] = await Promise.all([
-                    axios.get('/songs'),
-                    axios.get('/albums'),
-                    axios.get('/artists'),
-                    axios.get('/users')
-                ]);
-                setStats({
-                    songs: songsRes.data.length,
-                    albums: albumsRes.data.length,
-                    artists: artistsRes.data.length,
-                    users: usersRes.data.length
-                });
-            } catch (err) {
-                setError('Error al cargar las estadísticas');
-            } finally {
-                setLoading(false);
-            }
-        };
+/** Catalogue overview plus the most recent sign-ups. */
+export default function AdminDashboard() {
+  const [data, setData] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-        fetchStats();
-    }, []);
+  useEffect(() => {
+    let alive = true;
 
-    const sections = [
-        { title: 'Canciones', path: '/admin/songs', count: stats.songs, icon: '🎵' },
-        { title: 'Álbumes', path: '/admin/albums', count: stats.albums, icon: '💿' },
-        { title: 'Artistas', path: '/admin/artists', count: stats.artists, icon: '🎤' },
-        { title: 'Usuarios', path: '/admin/users', count: stats.users, icon: '👥' }
-    ];
+    Promise.all([
+      api.get('/songs'),
+      api.get('/albums'),
+      api.get('/artists'),
+      api.get('/users')
+    ])
+      .then(([s, a, ar, u]) => {
+        if (!alive) return;
+        setData({
+          songs: s.data.length,
+          albums: a.data.length,
+          artists: ar.data.length,
+          withAudio: s.data.filter((x) => x.archivo_audio).length,
+          totalSeconds: s.data.reduce((sum, x) => sum + (Number(x.duracion) || 0), 0)
+        });
+        setUsers(u.data);
+      })
+      .catch((err) => alive && setError(errorMessage(err, 'No se pudo cargar el panel.')))
+      .finally(() => alive && setLoading(false));
 
-    return (
-        <div className="container py-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Panel de Administración</h1>
-                    <span className="badge bg-success fs-6">Admin</span>
-                </div>
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-                {loading && (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-success" role="status">
-                            <span className="visually-hidden">Cargando...</span>
-                        </div>
-                        <p className="mt-2 text-muted">Cargando dashboard...</p>
-                    </div>
-                )}
+  if (loading) return <Spinner center />;
 
-                {error && (
-                    <div className="alert alert-danger" role="alert">
-                        {error}
-                    </div>
-                )}
-
-                {!loading && !error && (
-                    <>
-                        <div className="card bg-dark text-white mb-4">
-                            <div className="card-body">
-                                <h4 className="card-title">Bienvenido, {user?.nombre}</h4>
-                                <p className="card-text mb-0">
-                                    Tipo de cuenta: <span className="badge bg-info">{user?.tipo_cuenta}</span>
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="row g-4 mb-4">
-                            {sections.map((section) => (
-                                <div className="col-md-6 col-lg-3" key={section.path}>
-                                    <div className="card bg-dark text-white h-100">
-                                        <div className="card-body text-center">
-                                            <div className="fs-1 mb-2">{section.icon}</div>
-                                            <h5 className="card-title">{section.title}</h5>
-                                            <p className="card-text display-6">{section.count}</p>
-                                            <Link to={section.path} className="btn btn-success btn-sm">
-                                                Gestionar
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="card bg-dark text-white">
-                            <div className="card-body">
-                                <h5 className="card-title">Información de la Cuenta</h5>
-                                <table className="table table-dark table-borderless mb-0">
-                                    <tbody>
-                                        <tr>
-                                            <td className="text-muted">Nombre:</td>
-                                            <td>{user?.nombre}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-muted">Email:</td>
-                                            <td>{user?.email}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-muted">Tipo de cuenta:</td>
-                                            <td>{user?.tipo_cuenta}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-muted">Fecha de registro:</td>
-                                            <td>{user?.fecha_registro ? new Date(user.fecha_registro).toLocaleDateString() : 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-muted">País:</td>
-                                            <td>{user?.pais || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="text-muted">Saldo:</td>
-                                            <td>${user?.saldo ? parseFloat(user.saldo).toFixed(2) : '0.00'}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </>
-                )}
+  return (
+    <>
+      {error && (
+        <div style={{ marginBottom: 16 }}>
+          <Alert>{error}</Alert>
         </div>
-    );
-};
+      )}
 
-export default AdminDashboard;
+      <div className="stat-grid">
+        {TILES.map((t) => (
+          <Link key={t.key} className="stat stat--link" to={t.to}>
+            <div className="stat-label">{t.label}</div>
+            <div className="stat-value">{data?.[t.key] ?? '—'}</div>
+            <span className="stat-hint">Administrar →</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="detail-grid" style={{ padding: 0, marginTop: 32 }}>
+        <div className="panel">
+          <h2 className="panel-title">Canciones con audio</h2>
+          <p style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.04em' }}>
+            {data?.withAudio ?? 0}{' '}
+            <span className="text-subdued" style={{ fontSize: 16, fontWeight: 500 }}>
+              de {data?.songs ?? 0}
+            </span>
+          </p>
+          <p className="text-subdued" style={{ fontSize: 14, marginTop: 8 }}>
+            Las canciones sin archivo no se pueden reproducir todavía. Sube el audio
+            desde la sección Canciones.
+          </p>
+          <Link className="btn btn--primary btn--sm" to="/admin/songs" style={{ marginTop: 16 }}>
+            Gestionar canciones
+          </Link>
+        </div>
+
+        <div className="panel">
+          <h2 className="panel-title">Usuarios recientes</h2>
+          <ul className="mini-list">
+            {users.slice(0, 5).map((u) => (
+              <li key={u.id_usuario}>
+                <span className="mini-list-name">{u.nombre}</span>
+                <span className="mini-list-meta">{u.email}</span>
+              </li>
+            ))}
+            {users.length === 0 && <li className="text-subdued">Sin datos.</li>}
+          </ul>
+        </div>
+      </div>
+    </>
+  );
+}

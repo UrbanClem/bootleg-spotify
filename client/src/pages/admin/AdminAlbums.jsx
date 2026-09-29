@@ -1,275 +1,343 @@
-import { useState, useEffect, useContext } from 'react';
-import axios from '../../api';
-import AlbumCard from '../../components/AlbumCard';
-import { AuthContext } from '../../context/AuthContext';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import api from '../../api';
+import Modal from '../../components/Modal';
+import { Alert, EmptyState, Spinner } from '../../components/Feedback';
+import { PlusIcon, EditIcon, TrashIcon, SearchIcon, AlbumIcon } from '../../components/icons';
+import { errorMessage, toIsoDate } from '../../utils';
 
-const AdminAlbums = () => {
-    const { user } = useContext(AuthContext);
-    const [albums, setAlbums] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [selectedAlbum, setSelectedAlbum] = useState(null);
-    const [formData, setFormData] = useState({
-        titulo: '',
-        id_artista: '',
-        fecha_lanzamiento: '',
-        genero: ''
-    });
-    const [artists, setArtists] = useState([]);
-
-    useEffect(() => {
-        if (user && user.tipo_cuenta !== 'Admin') {
-            setError('Acceso denegado. Se requiere rol de administrador.');
-            setLoading(false);
-            return;
-        }
-        fetchAlbums();
-        fetchArtists();
-    }, [user]);
-
-    const fetchAlbums = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get('/albums');
-            setAlbums(response.data);
-        } catch (err) {
-            setError('Error al cargar los álbumes');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchArtists = async () => {
-        try {
-            const response = await axios.get('/artists');
-            setArtists(response.data);
-        } catch (err) {
-            console.error('Error al cargar artistas:', err);
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm('¿Estás seguro de que deseas eliminar este álbum?')) return;
-
-        try {
-            await axios.delete(`/albums/${id}`);
-            setAlbums(albums.filter(album => album.id_album !== id));
-        } catch (err) {
-            setError('Error al eliminar el álbum');
-        }
-    };
-
-    const handleEdit = (album) => {
-        setSelectedAlbum(album);
-        setFormData({
-            titulo: album.titulo || '',
-            id_artista: album.id_artista || '',
-            fecha_lanzamiento: album.fecha_lanzamiento ? album.fecha_lanzamiento.split('T')[0] : '',
-            genero: album.genero || ''
-        });
-        setShowEditModal(true);
-    };
-
-    const handleAdd = () => {
-        setFormData({
-            titulo: '',
-            id_artista: '',
-            fecha_lanzamiento: '',
-            genero: ''
-        });
-        setShowAddModal(true);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (showEditModal && selectedAlbum) {
-                await axios.put(`/albums/${selectedAlbum.id_album}`, formData);
-                setAlbums(albums.map(a => a.id_album === selectedAlbum.id_album ? { ...a, ...formData } : a));
-                setShowEditModal(false);
-            } else {
-                await axios.post('/albums', formData);
-                fetchAlbums();
-                setShowAddModal(false);
-            }
-        } catch (err) {
-            setError('Error al guardar el álbum');
-        }
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const renderForm = () => (
-        <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-                <label className="form-label">Título</label>
-                <input
-                    type="text"
-                    className="form-control"
-                    name="titulo"
-                    value={formData.titulo}
-                    onChange={handleChange}
-                    required
-                />
-            </div>
-            <div className="mb-3">
-                <label className="form-label">Artista</label>
-                <select
-                    className="form-select"
-                    name="id_artista"
-                    value={formData.id_artista}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="">Seleccionar artista</option>
-                    {artists.map(artist => (
-                        <option key={artist.id_artista} value={artist.id_artista}>
-                            {artist.nombre_artista}
-                        </option>
-                    ))}
-                </select>
-            </div>
-            <div className="mb-3">
-                <label className="form-label">Fecha de lanzamiento</label>
-                <input
-                    type="date"
-                    className="form-control"
-                    name="fecha_lanzamiento"
-                    value={formData.fecha_lanzamiento}
-                    onChange={handleChange}
-                />
-            </div>
-            <div className="mb-3">
-                <label className="form-label">Género</label>
-                <input
-                    type="text"
-                    className="form-control"
-                    name="genero"
-                    value={formData.genero}
-                    onChange={handleChange}
-                />
-            </div>
-            <div className="d-flex justify-content-end gap-2">
-                <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                        setShowAddModal(false);
-                        setShowEditModal(false);
-                    }}
-                >
-                    Cancelar
-                </button>
-                <button type="submit" className="btn btn-success">
-                    {showEditModal ? 'Actualizar' : 'Crear'}
-                </button>
-            </div>
-        </form>
-    );
-
-    return (
-          <div className="container py-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h1>Gestión de Álbumes</h1>
-                  <button className="btn btn-success" onClick={handleAdd}>
-                      Nuevo Álbum
-                  </button>
-              </div>
-
-              {loading && (
-                  <div className="text-center py-5">
-                      <div className="spinner-border text-success" role="status">
-                          <span className="visually-hidden">Cargando...</span>
-                      </div>
-                      <p className="mt-2 text-muted">Cargando álbumes...</p>
-                  </div>
-              )}
-
-              {error && (
-                  <div className="alert alert-danger" role="alert">
-                      {error}
-                  </div>
-              )}
-
-              {!loading && !error && (
-                  <>
-                      {albums.length === 0 ? (
-                          <div className="alert alert-info">
-                              No hay álbumes registrados.
-                          </div>
-                      ) : (
-                          <div className="row g-4">
-                              {albums.map(album => (
-                                  <div className="col-md-6 col-lg-4" key={album.id_album}>
-                                      <div className="position-relative">
-                                          <AlbumCard album={album} />
-                                          <div className="position-absolute top-0 end-0 m-2 d-flex gap-1">
-                                              <button
-                                                  className="btn btn-sm btn-warning"
-                                                  onClick={() => handleEdit(album)}
-                                                  title="Editar"
-                                              >
-                                                  ✏️
-                                              </button>
-                                              <button
-                                                  className="btn btn-sm btn-danger"
-                                                  onClick={() => handleDelete(album.id_album)}
-                                                  title="Eliminar"
-                                              >
-                                                  🗑️
-                                              </button>
-                                          </div>
-                                      </div>
-                                  </div>
-                              ))}
-                          </div>
-                      )}
-                  </>
-              )}
-
-              {/* Add Modal */}
-              {showAddModal && (
-                  <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <div className="modal-dialog">
-                          <div className="modal-content bg-dark text-white">
-                              <div className="modal-header">
-                                  <h5 className="modal-title">Nuevo Álbum</h5>
-                                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowAddModal(false)}></button>
-                              </div>
-                              <div className="modal-body">
-                                  {renderForm()}
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              )}
-
-              {/* Edit Modal */}
-              {showEditModal && (
-                  <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <div className="modal-dialog">
-                          <div className="modal-content bg-dark text-white">
-                              <div className="modal-header">
-                                  <h5 className="modal-title">Editar Álbum</h5>
-                                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowEditModal(false)}></button>
-                              </div>
-                              <div className="modal-body">
-                                  {renderForm()}
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              )}
-          </div>
-    );
+const EMPTY = {
+  titulo: '',
+  id_artista: '',
+  fecha_lanzamiento: '',
+  genero: '',
+  portada: ''
 };
 
-export default AdminAlbums;
+/** Full CRUD over the `album` table, including cover upload. */
+export default function AdminAlbums() {
+  const [albums, setAlbums] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [notice, setNotice] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [a, ar] = await Promise.all([api.get('/albums'), api.get('/artists')]);
+      setAlbums(a.data);
+      setArtists(ar.data);
+      setError('');
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudieron cargar los álbumes.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const visible = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return albums;
+    return albums.filter(
+      (a) =>
+        a.titulo.toLowerCase().includes(term) ||
+        (a.nombre_artista ?? '').toLowerCase().includes(term) ||
+        (a.genero ?? '').toLowerCase().includes(term)
+    );
+  }, [albums, query]);
+
+  const remove = async (album) => {
+    if (!window.confirm(`¿Eliminar el álbum «${album.titulo}»?`)) return;
+    try {
+      await api.delete(`/albums/${album.id_album}`);
+      setNotice({ type: 'success', text: 'Álbum eliminado.' });
+      load();
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo eliminar.'));
+    }
+  };
+
+  if (loading) return <Spinner center />;
+
+  return (
+    <>
+      <div className="admin-head">
+        <div>
+          <h2 className="section-title">Álbumes ({albums.length})</h2>
+          <p className="text-subdued" style={{ fontSize: 14 }}>
+            {albums.filter((a) => a.portada).length} con portada
+          </p>
+        </div>
+        <div className="row">
+          <div className="input-group" style={{ flex: '0 1 260px' }}>
+            <SearchIcon size={18} />
+            <input
+              className="input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filtrar álbumes"
+              aria-label="Filtrar álbumes"
+            />
+          </div>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => setEditing({ ...EMPTY })}
+          >
+            <PlusIcon size={16} /> Nuevo álbum
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ marginTop: 16 }}>
+          <Alert onDismiss={() => setError('')}>{error}</Alert>
+        </div>
+      )}
+      {notice && (
+        <div style={{ marginTop: 16 }}>
+          <Alert variant="success" onDismiss={() => setNotice(null)}>
+            {notice.text}
+          </Alert>
+        </div>
+      )}
+
+      <div style={{ marginTop: 24 }}>
+        {visible.length === 0 ? (
+          <EmptyState icon={AlbumIcon} title="Sin álbumes" />
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="num">#</th>
+                  <th>Título</th>
+                  <th>Artista</th>
+                  <th>Género</th>
+                  <th>Fecha</th>
+                  <th className="num">Canciones</th>
+                  <th>Portada</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((album) => (
+                  <tr key={album.id_album}>
+                    <td className="num">{album.id_album}</td>
+                    <td className="cell-title">{album.titulo}</td>
+                    <td className="text-subdued">{album.nombre_artista ?? '—'}</td>
+                    <td className="text-subdued">{album.genero ?? '—'}</td>
+                    <td className="text-subdued">
+                      {album.fecha_lanzamiento ? album.fecha_lanzamiento.slice(0, 10) : '—'}
+                    </td>
+                    <td className="num">{album.total_canciones ?? 0}</td>
+                    <td>
+                      {album.portada ? (
+                        <span className="tag tag--green">Sí</span>
+                      ) : (
+                        <span className="tag">No</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          type="button"
+                          className="toggle-btn"
+                          onClick={() => setEditing(album)}
+                          aria-label={`Editar ${album.titulo}`}
+                        >
+                          <EditIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="toggle-btn"
+                          onClick={() => remove(album)}
+                          aria-label={`Eliminar ${album.titulo}`}
+                        >
+                          <TrashIcon size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {editing && (
+        <AlbumModal
+          album={editing}
+          artists={artists}
+          onClose={() => setEditing(null)}
+          onSaved={(message) => {
+            setEditing(null);
+            setNotice({ type: 'success', text: message });
+            load();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function AlbumModal({ album, artists, onClose, onSaved }) {
+  const isNew = !album.id_album;
+  const [form, setForm] = useState({
+    titulo: album.titulo ?? '',
+    id_artista: album.id_artista ?? '',
+    fecha_lanzamiento: toIsoDate(album.fecha_lanzamiento),
+    genero: album.genero ?? '',
+    portada: album.portada ?? ''
+  });
+  const [coverFile, setCoverFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const update = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setError('');
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.titulo.trim()) {
+      setError('El título es obligatorio.');
+      return;
+    }
+    if (!form.id_artista) {
+      setError('Selecciona un artista.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      let portada = form.portada;
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('image', coverFile);
+        const { data } = await api.post('/upload/image?type=images', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        portada = data.filename;
+      }
+
+      const payload = {
+        titulo: form.titulo.trim(),
+        id_artista: Number(form.id_artista),
+        fecha_lanzamiento: form.fecha_lanzamiento || null,
+        genero: form.genero.trim(),
+        portada: portada || null
+      };
+
+      if (isNew) {
+        await api.post('/albums', payload);
+        onSaved('Álbum creado.');
+      } else {
+        await api.put(`/albums/${album.id_album}`, payload);
+        onSaved('Álbum actualizado.');
+      }
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo guardar el álbum.'));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={isNew ? 'Nuevo álbum' : `Editar «${album.titulo}»`}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" form="album-form" className="btn btn--primary" disabled={busy}>
+            {busy ? 'Guardando…' : 'Guardar'}
+          </button>
+        </>
+      }
+    >
+      <form id="album-form" className="stack" onSubmit={submit}>
+        {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
+
+        <label className="field">
+          <span className="field-label">Título</span>
+          <input
+            className="input"
+            value={form.titulo}
+            onChange={update('titulo')}
+            maxLength={255}
+            required
+          />
+        </label>
+
+        <div className="form-grid">
+          <label className="field">
+            <span className="field-label">Artista</span>
+            <select
+              className="input"
+              value={form.id_artista}
+              onChange={update('id_artista')}
+              required
+            >
+              <option value="">Selecciona…</option>
+              {artists.map((a) => (
+                <option key={a.id_artista} value={a.id_artista}>
+                  {a.nombre_artista}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            <span className="field-label">Género</span>
+            <input
+              className="input"
+              value={form.genero}
+              onChange={update('genero')}
+              maxLength={100}
+              placeholder="Indie rock"
+            />
+          </label>
+
+          <label className="field">
+            <span className="field-label">Fecha de lanzamiento</span>
+            <input
+              className="input"
+              type="date"
+              value={form.fecha_lanzamiento}
+              onChange={update('fecha_lanzamiento')}
+            />
+          </label>
+        </div>
+
+        <div className="field">
+          <span className="field-label">Portada</span>
+          {album.portada && !coverFile && (
+            <img
+              src={`/uploads/images/${album.portada}`}
+              alt="Portada actual"
+              style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 4 }}
+            />
+          )}
+          <input
+            className="input"
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+            style={{ paddingTop: 8 }}
+          />
+          <span className="field-hint">JPG, PNG, GIF o WEBP. Máximo 10 MB.</span>
+        </div>
+      </form>
+    </Modal>
+  );
+}

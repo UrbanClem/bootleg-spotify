@@ -1,177 +1,149 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
+import { Alert } from '../components/Feedback';
+import { UserIcon, CheckIcon, CloseIcon } from '../components/icons';
 
-const Register = () => {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    password: '',
-    confirm_password: '',
-  });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+/** Rough password strength meter, mirroring Spotify's signup hints. */
+function strengthOf(password) {
+  if (!password) return 0;
+  if (password.length < 6) return 1;
+  if (password.length < 10) return /[0-9]/.test(password) ? 3 : 2;
+  return /[0-9]/.test(password) && /[A-Za-z]/.test(password) ? 4 : 3;
+}
 
-  const { register } = useAuth();
+const STRENGTH = ['', 'Débil', 'Normal', 'Buena', 'Fuerte'];
+
+export default function Register() {
+  const { register, login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const [form, setForm] = useState({ nombre: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const update = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setError('');
   };
 
-  const handleSubmit = async (e) => {
+  const strength = strengthOf(form.password);
+
+  const submit = async (e) => {
     e.preventDefault();
+    if (form.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    setBusy(true);
     setError('');
-    setSuccess('');
-
-    // Validation
-    if (!formData.nombre || !formData.email || !formData.password || !formData.confirm_password) {
-      setError('Todos los campos son requeridos');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    if (formData.password !== formData.confirm_password) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      await register(formData.nombre, formData.email, formData.password);
-      setSuccess('Registro exitoso! Redirigiendo al login...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      await register(form.nombre.trim(), form.email.trim(), form.password);
+      // Sign in straight away so the new user lands in the app.
+      await login(form.email.trim(), form.password);
+      navigate('/', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'Error en el registro. Intente nuevamente.');
-    } finally {
-      setLoading(false);
+      setError(
+        err?.response?.data?.error ?? 'No pudimos crear la cuenta. Inténtalo de nuevo.'
+      );
+      setBusy(false);
     }
   };
 
   return (
-    <div
-      className="d-flex align-items-center justify-content-center min-vh-100"
-      style={{
-        background: 'linear-gradient(135deg, #1db954, #191414)',
-      }}
-    >
-      <div
-        className="card p-4 shadow"
-        style={{
-          width: '100%',
-          maxWidth: '400px',
-          borderRadius: '12px',
-          backgroundColor: '#fff',
-        }}
-      >
-        <h2 className="text-center mb-4" style={{ color: '#191414' }}>
-          Crear Cuenta
-        </h2>
+    <div className="auth">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <Logo size={32} />
+          Bootleg
+        </div>
 
-        {error && (
-          <div className="alert alert-danger" role="alert">
-            {error}
-          </div>
-        )}
+        <h1 className="auth-title">Crea tu cuenta</h1>
+        <p className="auth-sub">Empieza a escuchar en segundos.</p>
 
-        {success && (
-          <div className="alert alert-success" role="alert">
-            {success}
-          </div>
-        )}
+        <form className="auth-form" onSubmit={submit}>
+          {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label htmlFor="nombre" className="form-label">
-              Nombre completo
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="nombre"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <label className="field">
+            <span className="field-label">Nombre</span>
+            <div className="input-group">
+              <UserIcon size={20} />
+              <input
+                className="input"
+                value={form.nombre}
+                onChange={update('nombre')}
+                placeholder="Tu nombre"
+                autoComplete="name"
+                maxLength={100}
+                required
+              />
+            </div>
+          </label>
 
-          <div className="mb-3">
-            <label htmlFor="email" className="form-label">
-              Email
-            </label>
-            <input
-              type="email"
-              className="form-control"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <label className="field">
+            <span className="field-label">Correo</span>
+            <div className="input-group">
+              <UserIcon size={20} />
+              <input
+                className="input"
+                type="email"
+                value={form.email}
+                onChange={update('email')}
+                placeholder="tu@correo.com"
+                autoComplete="email"
+                required
+              />
+            </div>
+          </label>
 
-          <div className="mb-3">
-            <label htmlFor="password" className="form-label">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              className="form-control"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-            <div className="form-text">Mínimo 6 caracteres</div>
-          </div>
+          <label className="field">
+            <span className="field-label">Contraseña</span>
+            <div className="input-group">
+              <input
+                className="input"
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={update('password')}
+                placeholder="Mínimo 6 caracteres"
+                autoComplete="new-password"
+                required
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                className="input-clear"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? <CloseIcon size={18} /> : <CheckIcon size={18} />}
+              </button>
+            </div>
+            {form.password && (
+              <div className="strength">
+                <div className="strength-bars">
+                  {[1, 2, 3, 4].map((i) => (
+                    <span key={i} className={strength >= i ? `is-on level-${strength}` : ''} />
+                  ))}
+                </div>
+                <span className="field-hint">{STRENGTH[strength]}</span>
+              </div>
+            )}
+          </label>
 
-          <div className="mb-3">
-            <label htmlFor="confirm_password" className="form-label">
-              Confirmar Contraseña
-            </label>
-            <input
-              type="password"
-              className="form-control"
-              id="confirm_password"
-              name="confirm_password"
-              value={formData.confirm_password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn w-100 text-white fw-bold"
-            style={{ backgroundColor: '#1db954', border: 'none' }}
-            disabled={loading}
-          >
-            {loading ? 'Registrando...' : 'Registrarse'}
+          <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
+            {busy ? 'Creando cuenta…' : 'Registrarse'}
           </button>
         </form>
 
-        <p className="text-center mt-3 mb-0">
-          ¿Ya tienes cuenta?{' '}
-          <Link to="/login" style={{ color: '#1db954' }}>
-            Inicia sesión aquí
-          </Link>
+        <hr className="auth-divider" />
+
+        <p className="auth-alt">
+          ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
         </p>
       </div>
     </div>
   );
-};
-
-export default Register;
+}

@@ -1,148 +1,302 @@
-import { useState, useEffect, useContext } from 'react';
-import axios from '../../api';
-import { AuthContext } from '../../context/AuthContext';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import api from '../../api';
+import Modal from '../../components/Modal';
+import { Alert, EmptyState, Spinner } from '../../components/Feedback';
+import { EditIcon, TrashIcon, SearchIcon, UserIcon } from '../../components/icons';
+import { useAuth } from '../../context/AuthContext';
+import { errorMessage, toIsoDate, formatDate } from '../../utils';
 
-const AdminUsers = () => {
-    const { user } = useContext(AuthContext);
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+/**
+ * User administration.
+ *
+ * The API exposes create (auth/register) and delete, plus a profile update
+ * endpoint that any authenticated user may call on themselves. There is no
+ * "change someone's role" route, so the role column is shown read-only rather
+ * than offering a control that would silently do nothing.
+ */
+export default function AdminUsers() {
+  const { user: me } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-    useEffect(() => {
-        if (user && user.tipo_cuenta !== 'Admin') {
-            setError('Acceso denegado. Se requiere rol de administrador.');
-            setLoading(false);
-            return;
-        }
-        fetchUsers();
-    }, [user]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/users');
+      setUsers(data);
+      setError('');
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudieron cargar los usuarios.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get('/users');
-            setUsers(response.data);
-        } catch (err) {
-            setError('Error al cargar los usuarios');
-        } finally {
-            setLoading(false);
-        }
-    };
+  useEffect(() => {
+    load();
+  }, [load]);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
-
-        try {
-            await axios.delete(`/users/${id}`);
-            setUsers(users.filter(u => u.id_usuario !== id));
-        } catch (err) {
-            setError('Error al eliminar el usuario');
-        }
-    };
-
-    const filteredUsers = users.filter(u =>
-        u.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const visible = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter(
+      (u) =>
+        u.nombre.toLowerCase().includes(term) ||
+        (u.email ?? '').toLowerCase().includes(term) ||
+        (u.pais ?? '').toLowerCase().includes(term)
     );
+  }, [users, query]);
 
-    const getAccountBadge = (tipo) => {
-        const badges = {
-            'Admin': 'bg-danger',
-            'Premium': 'bg-warning text-dark',
-            'Free': 'bg-secondary'
-        };
-        return badges[tipo] || 'bg-secondary';
-    };
+  const remove = async (target) => {
+    if (target.id_usuario === me?.id_usuario) {
+      setError('No puedes eliminar tu propia cuenta.');
+      return;
+    }
+    if (!window.confirm(`¿Eliminar a «${target.nombre}»?`)) return;
+    try {
+      await api.delete(`/users/${target.id_usuario}`);
+      setNotice({ type: 'success', text: 'Usuario eliminado.' });
+      load();
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo eliminar.'));
+    }
+  };
 
-    return (
-          <div className="container py-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h1>Gestión de Usuarios</h1>
-                  <span className="badge bg-primary fs-6">{users.length} usuarios</span>
-              </div>
+  if (loading) return <Spinner center />;
 
-              <div className="mb-3">
-                  <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Buscar por nombre o email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-              </div>
-
-              {loading && (
-                  <div className="text-center py-5">
-                      <div className="spinner-border text-success" role="status">
-                          <span className="visually-hidden">Cargando...</span>
-                      </div>
-                      <p className="mt-2 text-muted">Cargando usuarios...</p>
-                  </div>
-              )}
-
-              {error && (
-                  <div className="alert alert-danger" role="alert">
-                      {error}
-                  </div>
-              )}
-
-              {!loading && !error && (
-                  <>
-                      {filteredUsers.length === 0 ? (
-                          <div className="alert alert-info">
-                              No se encontraron usuarios.
-                          </div>
-                      ) : (
-                          <div className="table-responsive">
-                              <table className="table table-dark table-hover">
-                                  <thead>
-                                      <tr>
-                                          <th>ID</th>
-                                          <th>Nombre</th>
-                                          <th>Email</th>
-                                          <th>Tipo</th>
-                                          <th>País</th>
-                                          <th>Saldo</th>
-                                          <th>Registro</th>
-                                          <th>Última Conexión</th>
-                                          <th>Acciones</th>
-                                      </tr>
-                                  </thead>
-                                  <tbody>
-                                      {filteredUsers.map(u => (
-                                          <tr key={u.id_usuario}>
-                                              <td>{u.id_usuario}</td>
-                                              <td>{u.nombre}</td>
-                                              <td>{u.email}</td>
-                                              <td>
-                                                  <span className={`badge ${getAccountBadge(u.tipo_cuenta)}`}>
-                                                      {u.tipo_cuenta}
-                                                  </span>
-                                              </td>
-                                              <td>{u.pais || 'N/A'}</td>
-                                              <td>${u.saldo ? parseFloat(u.saldo).toFixed(2) : '0.00'}</td>
-                                              <td>{u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString() : 'N/A'}</td>
-                                              <td>{u.ultima_conexion ? new Date(u.ultima_conexion).toLocaleDateString() : 'N/A'}</td>
-                                              <td>
-                                                  <button
-                                                      className="btn btn-sm btn-danger"
-                                                      onClick={() => handleDelete(u.id_usuario)}
-                                                      title="Eliminar usuario"
-                                                  >
-                                                      🗑️
-                                                  </button>
-                                              </td>
-                                          </tr>
-                                      ))}
-                                  </tbody>
-                              </table>
-                          </div>
-                      )}
-                  </>
-              )}
+  return (
+    <>
+      <div className="admin-head">
+        <div>
+          <h2 className="section-title">Usuarios ({users.length})</h2>
+        </div>
+        <div className="row">
+          <div className="input-group" style={{ flex: '0 1 260px' }}>
+            <SearchIcon size={18} />
+            <input
+              className="input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filtrar usuarios"
+              aria-label="Filtrar usuarios"
+            />
           </div>
-    );
-};
+        </div>
+      </div>
 
-export default AdminUsers;
+      {error && (
+        <div style={{ marginTop: 16 }}>
+          <Alert onDismiss={() => setError('')}>{error}</Alert>
+        </div>
+      )}
+      {notice && (
+        <div style={{ marginTop: 16 }}>
+          <Alert variant="success" onDismiss={() => setNotice(null)}>
+            {notice.text}
+          </Alert>
+        </div>
+      )}
+
+      <div style={{ marginTop: 24 }}>
+        {visible.length === 0 ? (
+          <EmptyState icon={UserIcon} title="Sin usuarios" />
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="num">#</th>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Cuenta</th>
+                  <th>País</th>
+                  <th>Registro</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((u) => (
+                  <tr key={u.id_usuario}>
+                    <td className="num">{u.id_usuario}</td>
+                    <td className="cell-title">
+                      {u.nombre}
+                      {u.id_usuario === me?.id_usuario && (
+                        <span className="tag tag--green">Tú</span>
+                      )}
+                    </td>
+                    <td className="text-subdued">{u.email}</td>
+                    <td>
+                      {u.tipo_cuenta === 'Admin' ? (
+                        <span className="tag tag--green">Admin</span>
+                      ) : (
+                        <span className="tag">Premium</span>
+                      )}
+                    </td>
+                    <td className="text-subdued">{u.pais ?? '—'}</td>
+                    <td className="text-subdued">
+                      {u.fecha_registro ? toIsoDate(u.fecha_registro) : '—'}
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          type="button"
+                          className="toggle-btn"
+                          onClick={() => setEditing(u)}
+                          aria-label={`Editar ${u.nombre}`}
+                        >
+                          <EditIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="toggle-btn"
+                          disabled={u.id_usuario === me?.id_usuario}
+                          onClick={() => remove(u)}
+                          aria-label={`Eliminar ${u.nombre}`}
+                        >
+                          <TrashIcon size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {editing && (
+        <UserModal
+          target={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(message) => {
+            setEditing(null);
+            setNotice({ type: 'success', text: message });
+            load();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function UserModal({ target, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    nombre: target.nombre ?? '',
+    email: target.email ?? '',
+    fecha_nacimiento: '',
+    pais: target.pais ?? ''
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  // The list endpoint omits the birth date, so fetch it before editing.
+  useEffect(() => {
+    let alive = true;
+    api
+      .get(`/users/${target.id_usuario}`)
+      .then(({ data }) =>
+        alive && setForm((f) => ({ ...f, fecha_nacimiento: toIsoDate(data.fecha_nacimiento) }))
+      )
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [target.id_usuario]);
+
+  const update = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setError('');
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.put(`/users/${target.id_usuario}`, {
+        nombre: form.nombre.trim(),
+        email: form.email.trim(),
+        fecha_nacimiento: form.fecha_nacimiento || null,
+        pais: form.pais.trim() || null
+      });
+      onSaved('Usuario actualizado.');
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo guardar el usuario.'));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={`Editar «${target.nombre}»`}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" form="user-form" className="btn btn--primary" disabled={busy}>
+            {busy ? 'Guardando…' : 'Guardar'}
+          </button>
+        </>
+      }
+    >
+      <form id="user-form" className="stack" onSubmit={submit}>
+        {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
+
+        <label className="field">
+          <span className="field-label">Nombre</span>
+          <input
+            className="input"
+            value={form.nombre}
+            onChange={update('nombre')}
+            maxLength={100}
+            required
+          />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Correo</span>
+          <input
+            className="input"
+            type="email"
+            value={form.email}
+            onChange={update('email')}
+            required
+          />
+        </label>
+
+        <div className="form-grid">
+          <label className="field">
+            <span className="field-label">Fecha de nacimiento</span>
+            <input
+              className="input"
+              type="date"
+              value={form.fecha_nacimiento}
+              onChange={update('fecha_nacimiento')}
+            />
+          </label>
+
+          <label className="field">
+            <span className="field-label">País</span>
+            <input
+              className="input"
+              value={form.pais}
+              onChange={update('pais')}
+              maxLength={60}
+            />
+          </label>
+        </div>
+
+        <p className="field-hint">
+          Registrado el {formatDate(target.fecha_registro) || '—'}. El tipo de cuenta no
+          se puede modificar desde aquí.
+        </p>
+      </form>
+    </Modal>
+  );
+}

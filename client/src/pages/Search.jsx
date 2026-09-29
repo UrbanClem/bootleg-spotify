@@ -1,249 +1,269 @@
-import React, { useState, useEffect } from 'react';
-import axios from '../api';
-import { usePlayer } from '../context/PlayerContext';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import api from '../api';
+import MediaCard from '../components/MediaCard';
+import TrackRow from '../components/TrackRow';
+import Artwork from '../components/Artwork';
+import { Alert, EmptyState, Spinner } from '../components/Feedback';
+import { SearchIcon, CloseIcon, MusicIcon } from '../components/icons';
+import { errorMessage, coverStyle } from '../utils';
 
-function Search() {
-    const { playSong, currentSong, isPlaying } = usePlayer();
-    const [query, setQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('songs');
-    const [songs, setSongs] = useState([]);
-    const [albums, setAlbums] = useState([]);
-    const [artists, setArtists] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [hasSearched, setHasSearched] = useState(false);
+const TABS = [
+  { id: 'todo', label: 'Todo' },
+  { id: 'canciones', label: 'Canciones' },
+  { id: 'albumes', label: 'Álbumes' },
+  { id: 'artistas', label: 'Artistas' }
+];
 
-    useEffect(() => {
-        if (query.trim().length >= 2) {
-            const debounceTimer = setTimeout(() => {
-                handleSearch();
-            }, 300);
-            return () => clearTimeout(debounceTimer);
-        } else {
-            setSongs([]);
-            setAlbums([]);
-            setArtists([]);
-            setHasSearched(false);
-        }
-    }, [query]);
+const BROWSE = [
+  'Synth-pop', 'Post-rock', 'Indie tropical', 'Alt rock', 'Indie folk',
+  'Punk', 'Folktronica', 'Electronica', 'Indie rock', 'Neo soul',
+  'Pop urbano', 'Nu Metal'
+];
 
-    const handleSearch = async () => {
-        if (!query.trim()) return;
+/**
+ * Search across the three collections the API exposes.
+ *
+ * The backend offers no unified endpoint, so the three calls run in parallel
+ * and the active tab only decides what gets rendered.
+ */
+export default function Search() {
+  const [params, setParams] = useSearchParams();
+  const query = params.get('q') ?? '';
+  const [draft, setDraft] = useState(query);
+  const [tab, setTab] = useState('todo');
+  const [results, setResults] = useState({ songs: [], albums: [], artists: [] });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const inputRef = useRef(null);
 
-        try {
-            setLoading(true);
-            setError(null);
+  // Keep the input in sync when the query changes from outside (e.g. a genre
+  // shortcut in the sidebar).
+  useEffect(() => setDraft(query), [query]);
 
-            const [songsRes, albumsRes, artistsRes] = await Promise.all([
-                axios.get(`/search/songs?q=${encodeURIComponent(query)}`),
-                axios.get(`/search/albums?q=${encodeURIComponent(query)}`),
-                axios.get(`/search/artists?q=${encodeURIComponent(query)}`)
-            ]);
+  useEffect(() => {
+    const term = query.trim();
+    if (!term) {
+      setResults({ songs: [], albums: [], artists: [] });
+      setError('');
+      return undefined;
+    }
 
-            setSongs(songsRes.data);
-            setAlbums(albumsRes.data);
-            setArtists(artistsRes.data);
-            setHasSearched(true);
-        } catch (err) {
-            setError('Error en la búsqueda');
-            console.error('Search error:', err);
-        } finally {
-            setLoading(false);
-        }
+    let alive = true;
+    setLoading(true);
+    setError('');
+
+    Promise.all([
+      api.get('/search/songs', { params: { q: term } }),
+      api.get('/search/albums', { params: { q: term } }),
+      api.get('/search/artists', { params: { q: term } })
+    ])
+      .then(([s, a, ar]) => {
+        if (!alive) return;
+        setResults({ songs: s.data, albums: a.data, artists: ar.data });
+      })
+      .catch((err) => {
+        if (alive) setError(errorMessage(err, 'La búsqueda falló.'));
+      })
+      .finally(() => alive && setLoading(false));
+
+    return () => {
+      alive = false;
     };
+  }, [query]);
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleSearch();
-        }
-    };
+  const submit = (e) => {
+    e.preventDefault();
+    const next = draft.trim();
+    setParams(next ? { q: next } : {}, { replace: true });
+  };
 
-    const handlePlaySong = (song) => {
-        playSong(song);
-    };
+  const counts = {
+    todo: results.songs.length + results.albums.length + results.artists.length,
+    canciones: results.songs.length,
+    albumes: results.albums.length,
+    artistas: results.artists.length
+  };
 
-    const isCurrentSong = (songId) => currentSong && currentSong.id_cancion === songId;
+  const show = (id) => tab === 'todo' || tab === id;
+  const nothing = counts.todo === 0 && !loading && query.trim() !== '';
 
-    const totalResults = songs.length + albums.length + artists.length;
-
-    return (
-        <>
-          <h2 className="mb-4"><i className="fas fa-search me-2"></i>Buscar</h2>
-
-          {/* Search Input */}
-          <div className="input-group mb-4">
-              <span className="input-group-text bg-dark text-white border-secondary">
-                  <i className="fas fa-search"></i>
-              </span>
-              <input
-                  type="text"
-                  className="form-control bg-dark text-white border-secondary"
-                  placeholder="Buscar canciones, álbumes o artistas..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-              />
+  return (
+    <div className="page">
+      <div className="search-hero">
+        <form onSubmit={submit}>
+          <div className="input-group">
+            <SearchIcon size={24} />
+            <input
+              ref={inputRef}
+              className="input search-input"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="¿Qué quieres escuchar?"
+              aria-label="Buscar"
+              autoFocus
+            />
+            {draft && (
               <button
-                  className="btn btn-success"
-                  onClick={handleSearch}
-                  disabled={loading}
+                type="button"
+                className="input-clear"
+                onClick={() => {
+                  setDraft('');
+                  setParams({}, { replace: true });
+                  inputRef.current?.focus();
+                }}
+                aria-label="Limpiar búsqueda"
               >
-                  {loading ? (
-                      <span className="spinner-border spinner-border-sm" role="status"></span>
-                  ) : (
-                      'Buscar'
-                  )}
+                <CloseIcon size={18} />
               </button>
+            )}
           </div>
+        </form>
+      </div>
 
-          {error && (
-              <div className="alert alert-danger" role="alert">
-                  {error}
+      {error && (
+        <div style={{ marginBottom: 24 }}>
+          <Alert>{error}</Alert>
+        </div>
+      )}
+
+      {!query.trim() && (
+        <section className="section">
+          <div className="section-head">
+            <h2 className="section-title">Explorar por género</h2>
+          </div>
+          <div className="genre-grid">
+            {BROWSE.map((genre) => (
+              <button
+                key={genre}
+                type="button"
+                className="genre-tile"
+                style={coverStyle(genre)}
+                onClick={() => setParams({ q: genre }, { replace: true })}
+              >
+                <strong>{genre}</strong>
+                <Artwork seed={genre} icon={MusicIcon} alt="" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {query.trim() && !loading && (
+        <div className="segmented" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              className={tab === t.id ? 'is-active' : ''}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loading && <Spinner center />}
+
+      {!loading && nothing && (
+        <EmptyState
+          icon={SearchIcon}
+          title={`Sin resultados para "${query}"`}
+          action={
+            <button
+              type="button"
+              className="btn btn--outline"
+              onClick={() => {
+                setDraft('');
+                setParams({}, { replace: true });
+              }}
+            >
+              Limpiar búsqueda
+            </button>
+          }
+        >
+          Prueba con otro artista, álbum o género.
+        </EmptyState>
+      )}
+
+      {!loading && !nothing && (
+        <>
+          {show('canciones') && results.songs.length > 0 && (
+            <section className="section">
+              <div className="section-head">
+                <h2 className="section-title">Canciones</h2>
+                {tab === 'todo' && counts.canciones > 5 && (
+                  <button type="button" className="section-link" onClick={() => setTab('canciones')}>
+                    Ver todas
+                  </button>
+                )}
               </div>
-          )}
-
-          {/* Tabs */}
-          {hasSearched && (
-              <>
-                  <ul className="nav nav-tabs mb-3">
-                      <li className="nav-item">
-                          <button
-                              className={`nav-link ${activeTab === 'songs' ? 'active bg-dark text-success border-success' : 'text-light'}`}
-                              onClick={() => setActiveTab('songs')}
-                          >
-                              <i className="fas fa-music me-1"></i>Canciones
-                              <span className="badge bg-secondary ms-1">{songs.length}</span>
-                          </button>
-                      </li>
-                      <li className="nav-item">
-                          <button
-                              className={`nav-link ${activeTab === 'albums' ? 'active bg-dark text-success border-success' : 'text-light'}`}
-                              onClick={() => setActiveTab('albums')}
-                          >
-                              <i className="fas fa-compact-disc me-1"></i>Álbumes
-                              <span className="badge bg-secondary ms-1">{albums.length}</span>
-                          </button>
-                      </li>
-                      <li className="nav-item">
-                          <button
-                              className={`nav-link ${activeTab === 'artists' ? 'active bg-dark text-success border-success' : 'text-light'}`}
-                              onClick={() => setActiveTab('artists')}
-                          >
-                              <i className="fas fa-user me-1"></i>Artistas
-                              <span className="badge bg-secondary ms-1">{artists.length}</span>
-                          </button>
-                      </li>
-                  </ul>
-
-                  {totalResults === 0 && !loading && (
-                      <div className="text-center py-5">
-                          <i className="fas fa-search fa-3x text-secondary mb-3"></i>
-                          <p className="text-light">No se encontraron resultados para "{query}"</p>
-                      </div>
-                  )}
-
-                  {/* Songs Tab */}
-                  {activeTab === 'songs' && songs.length > 0 && (
-                      <div className="list-group">
-                          {songs.map(song => (
-                              <div
-                                  key={song.id_cancion}
-                                  className={`list-group-item d-flex justify-content-content-between align-items-center bg-dark text-white border-secondary ${isCurrentSong(song.id_cancion) ? 'border-success border-2' : ''}`}
-                              >
-                                  <div className="d-flex align-items-center">
-                                      {song.portada_album && (
-                                          <img
-                                              src={`/uploads/images/${song.portada_album}`}
-                                              alt={song.titulo_album}
-                                              className="rounded me-3"
-                                              style={{ width: '48px', height: '48px', objectFit: 'cover' }}
-                                          />
-                                      )}
-                                      <div>
-                                          <div className="fw-bold">
-                                              {song.titulo}
-                                              {isCurrentSong(song.id_cancion) && (
-                                                  <i className="fas fa-volume-up text-success ms-2"></i>
-                                              )}
-                                          </div>
-                                          <small className="text-secondary">
-                                              {song.nombre_artista} {song.titulo_album && `• ${song.titulo_album}`}
-                                          </small>
-                                      </div>
-                                  </div>
-                                  <button
-                                      className={`btn btn-sm ${isCurrentSong(song.id_cancion) && isPlaying ? 'btn-success' : 'btn-outline-success'}`}
-                                      onClick={() => handlePlaySong(song)}
-                                  >
-                                      <i className={`fas ${isCurrentSong(song.id_cancion) && isPlaying ? 'fa-pause' : 'fa-play'}`}></i>
-                                  </button>
-                              </div>
-                          ))}
-                      </div>
-                  )}
-
-                  {/* Albums Tab */}
-                  {activeTab === 'albums' && albums.length > 0 && (
-                      <div className="row">
-                          {albums.map(album => (
-                              <div key={album.id_album} className="col-md-4 col-lg-3 mb-4">
-                                  <div className="card h-100 bg-secondary border-0">
-                                      {album.portada && (
-                                          <img
-                                              src={`/uploads/${album.portada}`}
-                                              className="card-img-top"
-                                              alt={album.titulo}
-                                              style={{ height: '180px', objectFit: 'cover' }}
-                                          />
-                                      )}
-                                      <div className="card-body">
-                                          <h5 className="card-title text-white">{album.titulo}</h5>
-                                          <p className="card-text text-light small">{album.nombre_artista}</p>
-                                          <span className="badge bg-dark">
-                                              <i className="fas fa-music me-1"></i>
-                                              {album.total_canciones} canciones
-                                          </span>
-                                      </div>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  )}
-
-                  {/* Artists Tab */}
-                  {activeTab === 'artists' && artists.length > 0 && (
-                      <div className="row">
-                          {artists.map(artist => (
-                              <div key={artist.id_artista} className="col-md-4 col-lg-3 mb-4">
-                                  <div className="card h-100 bg-secondary border-0 text-center">
-                                      <div className="card-body">
-                                          <div className="rounded-circle bg-dark d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '100px', height: '100px' }}>
-                                              <i className="fas fa-user fa-3x text-secondary"></i>
-                                          </div>
-                                          <h5 className="card-title text-white">{artist.nombre_artista}</h5>
-                                          <span className="badge bg-dark">
-                                              <i className="fas fa-music me-1"></i>
-                                              {artist.total_canciones} canciones
-                                          </span>
-                                      </div>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  )}
-              </>
-          )}
-
-          {/* Initial State */}
-          {!hasSearched && !loading && (
-              <div className="text-center py-5">
-                  <i className="fas fa-search fa-3x text-secondary mb-3"></i>
-                  <p className="text-light">Escribe al menos 2 caracteres para buscar</p>
-                  <p className="text-secondary small">Busca canciones, álbumes o artistas</p>
+              <div className="track-list">
+                {results.songs.slice(0, tab === 'todo' ? 5 : undefined).map((song, i) => (
+                  <TrackRow
+                    key={song.id_cancion}
+                    song={song}
+                    index={i}
+                    queue={results.songs}
+                    showAlbum={tab === 'canciones'}
+                  />
+                ))}
               </div>
+            </section>
           )}
+
+          {show('albumes') && results.albums.length > 0 && (
+            <section className="section">
+              <div className="section-head">
+                <h2 className="section-title">Álbumes</h2>
+                {tab === 'todo' && counts.albumes > 6 && (
+                  <button type="button" className="section-link" onClick={() => setTab('albumes')}>
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="card-grid">
+                {results.albums.slice(0, tab === 'todo' ? 6 : undefined).map((album) => (
+                  <MediaCard key={album.id_album} item={album} kind="album" onPlay />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {show('artistas') && results.artists.length > 0 && (
+            <section className="section">
+              <div className="section-head">
+                <h2 className="section-title">Artistas</h2>
+                {tab === 'todo' && counts.artistas > 6 && (
+                  <button type="button" className="section-link" onClick={() => setTab('artistas')}>
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="card-grid">
+                {results.artists.slice(0, tab === 'todo' ? 6 : undefined).map((artist) => (
+                  <MediaCard
+                    key={artist.id_artista}
+                    item={artist}
+                    kind="artist"
+                    title={artist.nombre_artista}
+                    subtitle={artist.total_canciones ? `${artist.total_canciones} canciones` : 'Artista'}
+                    seed={artist.id_artista}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {tab === 'todo' &&
+            results.songs.length === 0 &&
+            results.albums.length === 0 &&
+            results.artists.length === 0 && null}
         </>
-    );
+      )}
+    </div>
+  );
 }
-
-export default Search;

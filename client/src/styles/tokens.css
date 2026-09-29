@@ -1,0 +1,79 @@
+/* ==========================================================================
+   Design tokens
+   Values mirror Spotify's own design language so the rendered result matches
+   the real product rather than merely "dark with green accents".
+   ========================================================================== */
+
+:root {
+    /* --- Brand ---------------------------------------------------------- */
+    --green: #1ed760;
+    --green-hover: #3be477;
+    --green-press: #50e082;
+    --green-brand: #1db954;
+    /* Play buttons stay green when disabled: a neutral grey circle reads as a
+       broken widget, and the green disc is the app's signature shape. */
+    --green-dim: rgba(30, 215, 96, 0.4);
+
+    /* --- Surfaces (darkest to lightest) --------------------------------- */
+    --bg-black: #000000;
+    --bg-base: #121212;
+    --bg-elevated: #181818;
+    --bg-elevated-hover: #282828;
+    --bg-highlight: #3e3e3e;
+    --bg-sidebar: #000000;
+    --bg-chip: #232323;
+    --bg-scrim: rgba(0, 0, 0, 0.7);
+    --bg-topbar: rgba(18, 18, 18, 0.92);
+    --bg-press-light: rgba(255, 255, 255, 0.1);
+    --bg-press-strong: rgba(255, 255, 255, 0.2);
+
+    /* --- Text ---------------------------------------------------------- */
+    --text-base: #ffffff;
+    --text-subdued: #b3b3b3;
+    --text-inverse: #000000;
+    --text-negative: #f0464c;
+    --text-warning: #f0b90b;
+    --text-info: #3d91f4;
+
+    /* --- Lines & shadows ------------------------------------------------ */
+    --line-subtle: rgba(255, 255, 255, 0.1);
+    --divider: #292929;
+    --shadow-overlay: 0 16px 70px rgba(0, 0, 0, 0.7);
+
+    /* --- Metrics -------------------------------------------------------- */
+    --sidebar-w: 240px;
+    --topbar-h: 64px;
+    --player-h: 88px;
+    --queue-w: 320px;
+
+    --radius-xs: 2px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-pill: 500px;
+
+    --page-pad: 24px;
+
+    /* --- Type ----------------------------------------------------------- */
+    --font: "Inter", "Circular Std", "Circular", "Segoe UI", system-ui,
+        -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+    /* --- Motion --------------------------------------------------------- */
+    --speed-fast: 150ms;
+    --speed-mid: 250ms;
+    --ease: cubic-bezier(0.3, 0, 0, 1);
+}
+
+/* Placeholder artwork gradients. Artwork picks one deterministically so a
+   missing cover still produces a stable, distinct colour. */
+:root {
+    --cover-0: linear-gradient(135deg, #1db954, #0b3d24);
+    --cover-1: linear-gradient(135deg, #f0464c, #3d1013);
+    --cover-2: linear-gradient(135deg, #3d91f4, #10233f);
+    --cover-3: linear-gradient(135deg, #f0b90b, #3d2f05);
+    --cover-4: linear-gradient(135deg, #9b59d0, #2c1740);
+    --cover-5: linear-gradient(135deg, #ff7a45, #3d1a0d);
+    --cover-6: linear-gradient(135deg, #2dd4bf, #08322e);
+    --cover-7: linear-gradient(135deg, #ff4d94, #3d0f21);
+    --cover-8: linear-gradient(135deg, #8ab4f8, #1a2b45);
+    --cover-9: linear-gradient(135deg, #c0ca4d, #2f330f);
+}

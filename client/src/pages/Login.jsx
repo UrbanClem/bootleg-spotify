@@ -1,120 +1,114 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
+import { Alert } from '../components/Feedback';
+import { UserIcon, CloseIcon } from '../components/icons';
 
-const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
+export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const from = location.state?.from ?? '/';
+
+  useEffect(() => {
     setError('');
-    setLoading(true);
+  }, [email, password]);
 
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
     try {
-      const user = await login(formData.email, formData.password);
-      if (user.tipo_cuenta === 'Admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      await login(email.trim(), password);
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      setError(
+        err?.response?.data?.error ?? 'No pudimos iniciar sesión. Revisa tus datos.'
+      );
+      setBusy(false);
     }
   };
 
   return (
-    <div
-      className="d-flex align-items-center justify-content-center min-vh-100"
-      style={{
-        background: 'linear-gradient(135deg, #1db954, #191414)',
-      }}
-    >
-      <div
-        className="card p-4 shadow"
-        style={{
-          width: '100%',
-          maxWidth: '400px',
-          borderRadius: '12px',
-          backgroundColor: '#fff',
-        }}
-      >
-        <h2 className="text-center mb-4" style={{ color: '#191414' }}>
-          Iniciar Sesión
-        </h2>
+    <div className="auth">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <Logo size={32} />
+          Bootleg
+        </div>
 
-        {error && (
-          <div className="alert alert-danger" role="alert">
-            {error}
-          </div>
-        )}
+        <h1 className="auth-title">Iniciar sesión</h1>
+        <p className="auth-sub">Sigue escuchando donde lo dejaste.</p>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label htmlFor="email" className="form-label">
-              Email
-            </label>
-            <input
-              type="email"
-              className="form-control"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        <form className="auth-form" onSubmit={submit}>
+          {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
-          <div className="mb-3">
-            <label htmlFor="password" className="form-label">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              className="form-control"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <label className="field">
+            <span className="field-label">Correo</span>
+            <div className="input-group">
+              <UserIcon size={20} />
+              <input
+                className="input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
+                autoComplete="email"
+                required
+              />
+            </div>
+          </label>
 
-          <button
-            type="submit"
-            className="btn w-100 text-white fw-bold"
-            style={{ backgroundColor: '#1db954', border: 'none' }}
-            disabled={loading}
-          >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          <label className="field">
+            <span className="field-label">Contraseña</span>
+            <div className="input-group">
+              <input
+                className="input"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                className="input-clear"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? <CloseIcon size={18} /> : <UserIcon size={18} />}
+              </button>
+            </div>
+          </label>
+
+          <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
+            {busy ? 'Entrando…' : 'Iniciar sesión'}
           </button>
         </form>
 
-        <p className="text-center mt-3 mb-0">
-          ¿No tienes cuenta?{' '}
-          <Link to="/register" style={{ color: '#1db954' }}>
-            Regístrate aquí
-          </Link>
+        <hr className="auth-divider" />
+
+        <p className="auth-alt">
+          ¿Aún no tienes cuenta?{' '}
+          <Link to="/register">Regístrate en Spotify</Link>
         </p>
+
+        <div className="auth-demo">
+          <strong>Cuenta de prueba</strong>
+          <br />
+          <code>test@email.com</code> · <code>123456</code>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Login;
+}

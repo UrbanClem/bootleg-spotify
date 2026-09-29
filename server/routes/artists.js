@@ -31,6 +31,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
         const [songs] = await pool.query(`
             SELECT c.id_cancion, c.titulo, c.duracion, c.popularidad, c.archivo_audio, c.explicit,
+                   c.id_artista, c.id_album,
                    al.titulo as titulo_album, al.portada as portada_album
             FROM cancion c
             LEFT JOIN album al ON c.id_album = al.id_album
@@ -38,7 +39,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
             ORDER BY c.popularidad DESC
         `, [req.params.id]);
 
-        res.json({ ...rows[0], canciones: songs });
+        // Attach the artist name so the player bar and track rows can show it
+        // without a second lookup.
+        const withArtist = songs.map((s) => ({ ...s, nombre_artista: rows[0].nombre_artista }));
+
+        res.json({ ...rows[0], canciones: withArtist });
     } catch (error) {
         console.error('Get artist error:', error);
         res.status(500).json({ error: 'Error al obtener artista' });

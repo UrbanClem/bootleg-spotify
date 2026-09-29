@@ -13,6 +13,7 @@ router.get('/songs', authenticateToken, async (req, res) => {
         const [rows] = await pool.query(`
             SELECT c.id_cancion, c.titulo, c.duracion, c.popularidad,
                    c.fecha_lanzamiento, c.archivo_audio, c.explicit,
+                   c.id_artista, c.id_album,
                    a.nombre_artista, al.titulo as titulo_album, al.portada as portada_album
             FROM cancion c
             LEFT JOIN artista a ON c.id_artista = a.id_artista

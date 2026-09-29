@@ -1,0 +1,576 @@
+/* ==========================================================================
+   Page-level layouts: auth screens, home, detail heroes, library
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Auth
+   -------------------------------------------------------------------------- */
+
+.auth {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--bg-black);
+}
+
+.auth::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+            90rem 45rem at 50% -25%,
+            rgba(29, 185, 84, 0.35),
+            transparent 65%
+        ),
+        var(--bg-black);
+    position: fixed;
+}
+
+.auth-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    padding: 32px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.auth-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+}
+
+.auth-sub {
+    font-size: 15px;
+    color: var(--text-subdued);
+    margin-bottom: 28px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.auth-divider {
+    margin: 24px 0 18px;
+    border-top: 1px solid var(--line-subtle);
+}
+
+.auth-alt {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-subdued);
+}
+
+.auth-alt a {
+    color: var(--text-base);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-alt a:hover {
+    color: var(--green);
+}
+
+.auth-demo {
+    margin-top: 24px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: rgba(30, 215, 96, 0.08);
+    border: 1px solid rgba(30, 215, 96, 0.25);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-subdued);
+}
+
+.auth-demo code {
+    color: var(--text-base);
+    font-size: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Home
+   -------------------------------------------------------------------------- */
+
+/* "Populares ahora" rows on the home page ------------------------------- */
+
+.mix-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.mix-rank {
+    width: 32px;
+    text-align: right;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-subdued);
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+}
+
+.mix-art {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+}
+
+.mix-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 620px) {
+    .mix-row .btn {
+        display: none;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+
+.greeting {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.greeting-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.greeting-sub {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--text-subdued);
+}
+
+/* Spotify's "shortcut" tiles: thumb + label, full-bleed on hover. */
+.shortcuts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.shortcut {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 80px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg-elevated-hover);
+    color: var(--text-base);
+    transition: background-color var(--speed-fast) ease;
+}
+
+.shortcut:hover {
+    text-decoration: none;
+}
+
+.shortcut-art {
+    width: 80px;
+    height: 80px;
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.shortcut-art .artwork {
+    border-radius: 0;
+}
+
+.shortcut-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* --------------------------------------------------------------------------
+   Detail hero (album / playlist / artist)
+   -------------------------------------------------------------------------- */
+
+.hero {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    padding: 24px var(--page-pad) 24px;
+    min-height: 340px;
+    background: linear-gradient(
+        to bottom,
+        var(--hero-tint, #3a3a3a) 0%,
+        transparent 100%
+    );
+}
+
+.hero-art {
+    width: 232px;
+    height: 232px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: 0 4px 60px rgba(0, 0, 0, 0.5);
+}
+
+.hero-art--round {
+    border-radius: 50%;
+}
+
+.hero-note {
+    font-size: 14px;
+    color: var(--text-subdued);
+    max-width: 70ch;
+}
+
+.hero-meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hero-kind {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hero-title {
+    font-size: clamp(40px, 7vw, 96px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.hero-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-base);
+}
+
+.hero-sub .dot {
+    font-size: 10px;
+    color: var(--text-base);
+}
+
+.hero-artist {
+    font-weight: 700;
+}
+
+.hero-artist:hover {
+    text-decoration: underline;
+}
+
+/* Artist hero uses a circular portrait and a slightly smaller title. */
+/* --------------------------------------------------------------------------
+   Detail action bar
+   -------------------------------------------------------------------------- */
+
+.detail-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px var(--page-pad) 8px;
+}
+
+.detail-stats {
+    display: flex;
+    gap: 24px;
+    padding: 0 var(--page-pad) 16px;
+    font-size: 14px;
+    color: var(--text-subdued);
+}
+
+.detail-stats strong {
+    color: var(--text-base);
+    font-weight: 700;
+}
+
+.detail-body {
+    padding-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Search
+   -------------------------------------------------------------------------- */
+
+.search-hero {
+    padding: 8px var(--page-pad) 24px;
+}
+
+.search-hero .input-group .input {
+    height: 48px;
+    font-size: 16px;
+}
+
+.genre-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.genre-tile {
+    position: relative;
+    height: 180px;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--cover, var(--cover-0));
+    color: var(--text-base);
+}
+
+.genre-tile:hover {
+    text-decoration: none;
+    filter: brightness(1.08);
+}
+
+.genre-tile strong {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.genre-tile .artwork {
+    position: absolute;
+    right: -24px;
+    bottom: -24px;
+    width: 90px;
+    height: 90px;
+    transform: rotate(25deg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   Library
+   -------------------------------------------------------------------------- */
+
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.filter-bar .input-group {
+    flex: 0 1 280px;
+}
+
+.filter-select {
+    height: 32px;
+    padding: 0 32px 0 12px;
+    border-radius: var(--radius-pill);
+    background-color: var(--bg-elevated-hover);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-base) 50%),
+        linear-gradient(135deg, var(--text-base) 50%, transparent 50%);
+    background-position: calc(100% - 16px) calc(50% + 1px),
+        calc(100% - 12px) calc(50% + 1px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.filter-select:hover {
+    background-color: var(--bg-highlight);
+}
+
+/* --------------------------------------------------------------------------
+   Profile
+   -------------------------------------------------------------------------- */
+
+.profile-head {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px var(--page-pad) 32px;
+}
+
+.profile-avatar {
+    width: 192px;
+    height: 192px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 4px 60px rgba(0, 0, 0, 0.5);
+}
+
+.profile-name {
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 32px;
+    padding: 0 var(--page-pad) 32px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .detail-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.panel {
+    padding: 24px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+}
+
+.panel-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.panel-head .panel-title {
+    margin-bottom: 0;
+}
+
+.definition-list {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px 24px;
+    font-size: 14px;
+}
+
+.definition-list dt {
+    color: var(--text-subdued);
+}
+
+.definition-list dd {
+    margin: 0;
+    color: var(--text-base);
+    font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   Admin
+   -------------------------------------------------------------------------- */
+
+.admin-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.admin-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.admin-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.admin-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-pill);
+    align-self: flex-start;
+    flex-wrap: wrap;
+}
+
+.admin-tabs a {
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-subdued);
+    transition: color var(--speed-fast) ease,
+        background-color var(--speed-fast) ease;
+}
+
+.admin-tabs a:hover {
+    color: var(--text-base);
+    text-decoration: none;
+}
+
+.admin-tabs a.is-active {
+    background: var(--green);
+    color: var(--text-inverse);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+

@@ -1,0 +1,1320 @@
+/* ==========================================================================
+   Reusable UI components
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    color: var(--text-base);
+    background: transparent;
+    transition: transform var(--speed-fast) var(--ease),
+        background-color var(--speed-fast) ease, color var(--speed-fast) ease,
+        border-color var(--speed-fast) ease, opacity var(--speed-fast) ease;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn svg {
+    flex: 0 0 auto;
+}
+
+/* Primary green action. Spotify pairs green with black text. */
+.btn--primary {
+    background: var(--green);
+    color: var(--text-inverse);
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: var(--green-hover);
+}
+
+.btn--outline {
+    border: 1px solid var(--text-subdued);
+    color: var(--text-base);
+}
+
+.btn--outline:hover:not(:disabled) {
+    border-color: var(--text-base);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.btn--ghost {
+    color: var(--text-subdued);
+}
+
+.btn--ghost:hover:not(:disabled) {
+    color: var(--text-base);
+    background: var(--bg-press-light);
+}
+
+.btn--danger {
+    border: 1px solid transparent;
+    background: rgba(240, 70, 76, 0.12);
+    color: var(--text-negative);
+}
+
+.btn--danger:hover:not(:disabled) {
+    background: rgba(240, 70, 76, 0.22);
+}
+
+.btn--sm {
+    height: 28px;
+    padding: 0 14px;
+    font-size: 13px;
+}
+
+.btn--lg {
+    height: 48px;
+    padding: 0 32px;
+    font-size: 16px;
+}
+
+.btn--block {
+    width: 100%;
+}
+
+/* Large round play button used on detail pages and player bar. */
+.play-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--green);
+    color: var(--text-inverse);
+    box-shadow: 0 8px 8px rgba(0, 0, 0, 0.3);
+    transition: transform var(--speed-fast) var(--ease),
+        background-color var(--speed-fast) ease;
+}
+
+.play-button:hover:not(:disabled) {
+    transform: scale(1.04);
+    background: var(--green-hover);
+}
+
+.play-button:active:not(:disabled) {
+    transform: scale(1);
+}
+
+.play-button--sm {
+    width: 32px;
+    height: 32px;
+    box-shadow: none;
+}
+
+.play-button--lg {
+    width: 64px;
+    height: 64px;
+}
+
+.play-button:disabled {
+    background: var(--green-dim);
+    color: var(--text-inverse);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Icon button whose colour reflects on/off state. */
+.toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    color: var(--text-subdued);
+    transition: transform var(--speed-fast) var(--ease),
+        color var(--speed-fast) ease, background-color var(--speed-fast) ease;
+}
+
+.toggle-btn:hover:not(:disabled) {
+    color: var(--text-base);
+    transform: scale(1.06);
+}
+
+.toggle-btn.is-active {
+    color: var(--green);
+}
+
+/* --------------------------------------------------------------------------
+   Artwork
+   -------------------------------------------------------------------------- */
+
+.artwork {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated-hover);
+}
+
+.artwork img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Deterministic gradient placeholder used when no cover is uploaded. */
+.artwork--fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cover, var(--cover-0));
+}
+
+.artwork--fallback svg {
+    width: 38%;
+    height: 38%;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.artwork--round {
+    border-radius: 50%;
+}
+
+/* --------------------------------------------------------------------------
+   Media card (album / artist / playlist)
+   -------------------------------------------------------------------------- */
+
+.card {
+    position: relative;
+    display: block;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-base);
+    transition: background-color var(--speed-fast) ease;
+}
+
+.card:hover,
+.card:focus-visible {
+    background: var(--bg-elevated-hover);
+    text-decoration: none;
+}
+
+.card:hover .card-play,
+.card:focus-visible .card-play {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.card-body {
+    padding-top: 12px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--text-base);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-subtitle {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text-subdued);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-play {
+    position: absolute;
+    right: 8px;
+    bottom: 12px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--green);
+    color: var(--text-inverse);
+    opacity: 0;
+    transform: translateY(8px);
+    box-shadow: 0 8px 8px rgba(0, 0, 0, 0.3);
+    transition: opacity var(--speed-fast) ease,
+        transform var(--speed-fast) var(--ease),
+        background-color var(--speed-fast) ease;
+}
+
+.card-play:hover {
+    background: var(--green-hover);
+}
+
+.card-artwork-wrap {
+    position: relative;
+}
+
+.card-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--green);
+    color: var(--text-inverse);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Card grid. `auto-fill` keeps the same responsive behaviour Spotify uses. */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+}
+
+@media (max-width: 767.98px) {
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Shelf: horizontally scrolling row of cards
+   -------------------------------------------------------------------------- */
+
+.shelf {
+    display: grid;
+    grid-template-columns: repeat(var(--shelf-size, 6), minmax(0, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 1500px) {
+    .shelf {
+        --shelf-size: 5;
+    }
+}
+@media (max-width: 1250px) {
+    .shelf {
+        --shelf-size: 4;
+    }
+}
+@media (max-width: 1000px) {
+    .shelf {
+        --shelf-size: 3;
+    }
+}
+@media (max-width: 760px) {
+    .shelf {
+        --shelf-size: 2;
+        gap: 8px;
+    }
+}
+
+.section {
+    margin-bottom: 40px;
+}
+
+.section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.section-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.section-title a:hover {
+    text-decoration: underline;
+}
+
+.section-link {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-subdued);
+    flex: 0 0 auto;
+}
+
+.section-link:hover {
+    color: var(--text-base);
+    text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Track list
+   -------------------------------------------------------------------------- */
+
+.track-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-head {
+    display: grid;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line-subtle);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-subdued);
+}
+
+.track-row {
+    display: grid;
+    align-items: center;
+    grid-template-columns: 24px minmax(0, 3fr) minmax(0, 2fr) auto;
+    gap: 16px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    color: var(--text-subdued);
+    transition: background-color var(--speed-fast) ease;
+}
+
+/* Album column collapses first, then the index, to keep the title readable. */
+@media (max-width: 1000px) {
+    .track-row {
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+    }
+
+    .track-cell--album {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .track-row {
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 8px;
+    }
+
+    .track-actions .toggle-btn {
+        display: none;
+    }
+}
+
+.track-cell {
+    min-width: 0;
+    font-size: 14px;
+    color: var(--text-subdued);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-cell a:hover {
+    color: var(--text-base);
+    text-decoration: underline;
+}
+
+.track-row:hover {
+    background: var(--bg-elevated-hover);
+    color: var(--text-base);
+    text-decoration: none;
+}
+
+.track-row.is-current {
+    color: var(--green);
+}
+
+/* Index cell swaps to a play button on hover. */
+.track-index {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 24px;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-subdued);
+    flex: 0 0 auto;
+}
+
+.track-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    color: var(--text-base);
+    transition: opacity var(--speed-fast) ease;
+}
+
+.track-row:hover .track-play {
+    opacity: 1;
+}
+
+.track-row:hover .track-index-num {
+    opacity: 0;
+}
+
+.track-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.track-art {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+}
+
+.track-meta {
+    min-width: 0;
+}
+
+.track-title {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--text-base);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-row.is-current .track-title {
+    color: var(--green);
+}
+
+.track-artist {
+    font-size: 14px;
+    line-height: 1.3;
+    color: var(--text-subdued);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-row:hover .track-artist {
+    color: var(--text-subdued);
+    text-decoration: underline;
+}
+
+.track-explicit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 2px;
+    background: var(--bg-highlight);
+    color: var(--text-base);
+    font-size: 9px;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.track-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+}
+
+.track-duration {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-subdued);
+    min-width: 40px;
+    text-align: right;
+}
+
+.track-actions .toggle-btn {
+    opacity: 0;
+}
+
+.track-row:hover .track-actions .toggle-btn,
+.track-row:focus-within .track-actions .toggle-btn,
+.track-actions .toggle-btn.is-active {
+    opacity: 1;
+}
+
+/* Equalizer bars shown for the playing track. */
+.equalizer {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+}
+
+.equalizer span {
+    width: 2px;
+    background: var(--green);
+    border-radius: 1px;
+    animation: eq-bounce 900ms ease-in-out infinite;
+}
+
+.equalizer span:nth-child(1) {
+    height: 40%;
+    animation-delay: -200ms;
+}
+.equalizer span:nth-child(2) {
+    height: 100%;
+    animation-delay: -500ms;
+}
+.equalizer span:nth-child(3) {
+    height: 70%;
+    animation-delay: -300ms;
+}
+
+.equalizer.is-paused span {
+    animation-play-state: paused;
+}
+
+@keyframes eq-bounce {
+    0%,
+    100% {
+        transform: scaleY(0.4);
+    }
+    50% {
+        transform: scaleY(1);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Sliders (seek bar + volume)
+   -------------------------------------------------------------------------- */
+
+.slider {
+    --fill: 0%;
+    position: relative;
+    flex: 1;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.slider-track {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-highlight);
+    overflow: hidden;
+}
+
+.slider-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--fill);
+    background: var(--text-subdued);
+    border-radius: var(--radius-pill);
+}
+
+/* Handle only appears on hover, matching Spotify. */
+.slider-handle {
+    position: absolute;
+    top: 50%;
+    left: var(--fill);
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    border-radius: 50%;
+    background: var(--text-base);
+    transform: translateY(-50%) scale(0);
+    transition: transform var(--speed-fast) var(--ease);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.slider:hover .slider-handle,
+.slider:focus-visible .slider-handle {
+    transform: translateY(-50%) scale(1);
+}
+
+.slider:hover .slider-fill {
+    background: var(--text-base);
+}
+
+.slider--green:hover .slider-fill {
+    background: var(--green);
+}
+
+.slider--green:hover .slider-handle {
+    background: var(--green);
+}
+
+/* --------------------------------------------------------------------------
+   Forms
+   -------------------------------------------------------------------------- */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-base);
+}
+
+.field-hint {
+    font-size: 12px;
+    color: var(--text-subdued);
+}
+
+.input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated-hover);
+    color: var(--text-base);
+    font-size: 14px;
+    transition: border-color var(--speed-fast) ease,
+        background-color var(--speed-fast) ease;
+}
+
+textarea.input {
+    height: auto;
+    min-height: 96px;
+    padding: 10px 12px;
+    resize: vertical;
+}
+
+select.input {
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-subdued) 50%),
+        linear-gradient(135deg, var(--text-subdued) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 36px;
+}
+
+.input:hover {
+    border-color: var(--text-subdued);
+}
+
+.input:focus {
+    border-color: var(--text-base);
+    background: var(--bg-elevated-hover);
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-group svg {
+    position: absolute;
+    left: 12px;
+    color: var(--text-subdued);
+    pointer-events: none;
+}
+
+.input-group .input {
+    padding-left: 40px;
+}
+
+.input-group .input-clear {
+    position: absolute;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--text-subdued);
+}
+
+.input-group .input-clear:hover {
+    color: var(--text-base);
+    background: var(--bg-press-light);
+}
+
+/* Oversized search field on the /search page. */
+.search-input {
+    border: 1px solid transparent;
+}
+
+.search-input:hover {
+    border-color: var(--line-subtle);
+}
+
+.search-input:focus {
+    border-color: var(--text-base);
+}
+
+/* Segmented control, used for search result tabs. */
+.segmented {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--line-subtle);
+    margin-bottom: 24px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.segmented::-webkit-scrollbar {
+    display: none;
+}
+
+.segmented button {
+    padding: 12px 4px;
+    margin-right: 20px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-subdued);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    transition: color var(--speed-fast) ease,
+        border-color var(--speed-fast) ease;
+}
+
+.segmented button:hover {
+    color: var(--text-base);
+}
+
+.segmented button.is-active {
+    color: var(--text-base);
+    border-bottom-color: var(--green);
+}
+
+/* Switch */
+.switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-track {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-highlight);
+    transition: background-color var(--speed-fast) ease;
+    flex: 0 0 auto;
+}
+
+.switch-track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-base);
+    transition: transform var(--speed-fast) var(--ease);
+}
+
+.switch input:checked + .switch-track {
+    background: var(--green);
+}
+
+.switch input:checked + .switch-track::after {
+    transform: translateX(18px);
+}
+
+.switch input:focus-visible + .switch-track {
+    outline: 2px solid var(--text-base);
+    outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Feedback: alerts, toasts, empty & loading states
+   -------------------------------------------------------------------------- */
+
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.alert svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+}
+
+.alert--error {
+    background: rgba(240, 70, 76, 0.15);
+    color: var(--text-base);
+    border-left: 3px solid var(--text-negative);
+}
+
+.alert--success {
+    background: rgba(30, 215, 96, 0.15);
+    color: var(--text-base);
+    border-left: 3px solid var(--green);
+}
+
+.alert--info {
+    background: rgba(61, 145, 244, 0.15);
+    color: var(--text-base);
+    border-left: 3px solid var(--text-info);
+}
+
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 64px 24px;
+    text-align: center;
+}
+
+.empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--bg-elevated-hover);
+    color: var(--text-subdued);
+}
+
+.empty-title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.empty-text {
+    font-size: 14px;
+    color: var(--text-subdued);
+    max-width: 44ch;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--bg-highlight);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 800ms linear infinite;
+}
+
+.spinner--sm {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+}
+
+.spinner--center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 0;
+    width: 100%;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Skeleton placeholders for loading shelves. */
+.skeleton {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Modal
+   -------------------------------------------------------------------------- */
+
+.modal-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--bg-scrim);
+    animation: fade-in var(--speed-fast) ease;
+}
+
+.modal {
+    width: 100%;
+    max-width: 560px;
+    max-height: min(84vh, 760px);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-elevated-hover);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-overlay);
+    animation: modal-in var(--speed-mid) var(--ease);
+    overflow: hidden;
+}
+
+.modal--wide {
+    max-width: 900px;
+}
+
+.modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 24px 8px;
+    flex: 0 0 auto;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.modal-body {
+    padding: 16px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 24px 24px;
+    flex: 0 0 auto;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Menu (dropdown / context menu)
+   -------------------------------------------------------------------------- */
+
+.menu {
+    position: absolute;
+    z-index: 90;
+    min-width: 200px;
+    padding: 4px;
+    background: var(--bg-elevated-hover);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-overlay);
+    animation: modal-in var(--speed-fast) var(--ease);
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-xs);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-base);
+    text-align: left;
+    transition: background-color var(--speed-fast) ease;
+}
+
+.menu-item:hover {
+    background: var(--bg-press-light);
+    text-decoration: none;
+}
+
+.menu-item--danger {
+    color: var(--text-negative);
+}
+
+.menu-divider {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--line-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   Chips / tags
+   -------------------------------------------------------------------------- */
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-elevated-hover);
+    color: var(--text-base);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.chip--outline {
+    background: transparent;
+    border: 1px solid var(--text-subdued);
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--bg-elevated-hover);
+    color: var(--text-base);
+}
+
+.tag--green {
+    background: var(--green);
+    color: var(--text-inverse);
+}
+
+.tag--warning {
+    background: var(--text-warning);
+    color: var(--text-inverse);
+}
+
+/* Password strength meter ------------------------------------------------ */
+
+.strength {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.strength-bars {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.strength-bars span {
+    flex: 1;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-highlight);
+}
+
+.strength-bars span.is-on.level-1 {
+    background: var(--text-negative);
+}
+
+.strength-bars span.is-on.level-2 {
+    background: var(--text-warning);
+}
+
+.strength-bars span.is-on.level-3,
+.strength-bars span.is-on.level-4 {
+    background: var(--green);
+}
+
+/* --------------------------------------------------------------------------
+   Table (admin surfaces)
+   -------------------------------------------------------------------------- */
+
+.table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-subdued);
+    text-align: left;
+    border-bottom: 1px solid var(--line-subtle);
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-subtle);
+    color: var(--text-base);
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    transition: background-color var(--speed-fast) ease;
+}
+
+.table tbody tr:hover {
+    background: var(--bg-elevated-hover);
+}
+
+.table td.num,
+.table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.table-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+}
+
+.cell-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.table .tag {
+    gap: 4px;
+    text-decoration: none;
+}
+
+/* Stat tiles used on admin dashboards. */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stat {
+    padding: 20px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+}
+
+.stat--link {
+    display: block;
+    transition: background-color var(--speed-fast) ease;
+}
+
+.stat--link:hover {
+    background: var(--bg-elevated-hover);
+    text-decoration: none;
+}
+
+.stat-hint {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-base);
+}
+
+.mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mini-list li {
+    display: flex;
+    flex-direction: column;
+}
+
+.mini-list-name {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.mini-list-meta {
+    font-size: 13px;
+    color: var(--text-subdued);
+}
+
+.stat-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-subdued);
+}
+
+.stat-value {
+    margin-top: 8px;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
