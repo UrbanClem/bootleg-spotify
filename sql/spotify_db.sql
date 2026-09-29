@@ -198,8 +198,22 @@ CREATE TABLE `album` (
 -- Volcado de datos para la tabla `album`
 --
 
+-- The demo catalogue was replaced with real albums. `Toxicity` was dropped
+-- along with the rest; its song survives with no album attached, because it is
+-- the only track that ships with an audio file.
 INSERT INTO `album` (`id_album`, `titulo`, `id_artista`, `fecha_lanzamiento`, `portada`, `genero`) VALUES
-(6, 'Toxicity', 6, '2001-09-04', '691df4758296f.jpg', 'Nu Metal');
+(1013, 'OK Computer',               1013, '1997-05-21', NULL, 'Alternative rock'),
+(1014, 'Paranoid',                  1014, '1970-09-18', NULL, 'Heavy metal'),
+(1015, 'System of a Down',          6,    '1998-06-30', NULL, 'Alternative metal'),
+(1016, 'Steal This Album!',         6,    '2002-11-26', NULL, 'Alternative metal'),
+(1017, 'Mezmerize',                 6,    '2005-05-17', NULL, 'Alternative metal'),
+(1018, 'Hypnotize',                 6,    '2005-11-22', NULL, 'Alternative metal'),
+(1019, 'Vulgar Display of Power',   1015, '1992-02-25', NULL, 'Groove metal'),
+(1020, 'Rust in Peace',             1016, '1990-09-24', NULL, 'Thrash metal'),
+(1021, 'Nevermind',                 1017, '1991-09-24', NULL, 'Grunge'),
+(1022, 'Black Sabbath',             1014, '1970-02-13', NULL, 'Heavy metal'),
+(1023, 'Around the Fur',            1018, '1997-10-28', NULL, 'Alternative metal'),
+(1024, 'Demon Days',                1019, '2005-05-11', NULL, 'Alternative rock');
 
 -- --------------------------------------------------------
 
@@ -227,7 +241,14 @@ INSERT INTO `artista` (`id_artista`, `nombre_artista`, `verificado`, `biografia`
 (3, 'The Weeknd', 1, NULL, '2019-07-22', 0, 2, NULL),
 (4, 'Shakira', 1, NULL, '2015-01-20', 0, 2, NULL),
 (5, 'Ed Sheeran', 1, NULL, '2017-08-14', 0, 2, NULL),
-(6, 'System Of A Down', 1, 'System of a Down es una banda armenio-estadounidense de heavy metal, formada en 1994 en Glendale, California.​ Está integrada por el vocalista Serj Tankian, el guitarrista Daron Malakian, el bajista Shavo Odadjian y el baterista John Dolmayan.​ Los miembros de la banda son de origen armenio.​​', '2025-11-19', 0, 0, 'System_Of_A_Down_691df42f8362b.webp');
+(6, 'System Of A Down', 1, 'System of a Down es una banda armenio-estadounidense de heavy metal, formada en 1994 en Glendale, California.​ Está integrada por el vocalista Serj Tankian, el guitarrista Daron Malakian, el bajista Shavo Odadjian y el baterista John Dolmayan.​ Los miembros de la banda son de origen armenio.​​', '2025-11-19', 0, 0, 'System_Of_A_Down_691df42f8362b.webp'),
+(1013, 'Radiohead', 1, NULL, NULL, 0, 0, NULL),
+(1014, 'Black Sabbath', 1, NULL, NULL, 0, 0, NULL),
+(1015, 'Pantera', 1, NULL, NULL, 0, 0, NULL),
+(1016, 'Megadeth', 1, NULL, NULL, 0, 0, NULL),
+(1017, 'Nirvana', 1, NULL, NULL, 0, 0, NULL),
+(1018, 'Deftones', 1, NULL, NULL, 0, 0, NULL),
+(1019, 'Gorillaz', 1, NULL, NULL, 0, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -284,8 +305,10 @@ CREATE TABLE `cancion` (
 -- Volcado de datos para la tabla `cancion`
 --
 
+-- Album 6 no longer exists, so this track is stored with no album. It is the
+-- only song that ships with an audio file, which is why it was kept.
 INSERT INTO `cancion` (`id_cancion`, `titulo`, `duracion`, `id_artista`, `id_album`, `popularidad`, `fecha_lanzamiento`, `archivo_audio`, `letra`, `explicit`) VALUES
-(10, 'Toxicity', 205, 6, 6, 0, '2001-09-04', '691df840875d7.mp3', '', 1);
+(10, 'Toxicity', 205, 6, NULL, 0, '2001-09-04', '691df840875d7.mp3', '', 1);
 
 -- --------------------------------------------------------
 
