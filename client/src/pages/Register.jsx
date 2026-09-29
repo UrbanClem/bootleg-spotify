@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 import { Alert } from '../components/Feedback';
 import { UserIcon, CheckIcon, CloseIcon } from '../components/icons';
+import LanguageSwitch from '../components/LanguageSwitch';
+import { useI18n } from '../i18n';
+import { errorMessage } from '../utils';
 
 /** Rough password strength meter, mirroring Spotify's signup hints. */
 function strengthOf(password) {
@@ -13,10 +16,12 @@ function strengthOf(password) {
   return /[0-9]/.test(password) && /[A-Za-z]/.test(password) ? 4 : 3;
 }
 
-const STRENGTH = ['', 'Débil', 'Normal', 'Buena', 'Fuerte'];
+/** Indexed by the score `strengthOf` returns; index 0 is never displayed. */
+const STRENGTH_KEYS = ['', 'auth.strengthWeak', 'auth.strengthNormal', 'auth.strengthGood', 'auth.strengthStrong'];
 
 export default function Register() {
   const { register, login } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ nombre: '', email: '', password: '' });
@@ -34,7 +39,7 @@ export default function Register() {
   const submit = async (e) => {
     e.preventDefault();
     if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+      setError(t('auth.tooShort'));
       return;
     }
 
@@ -46,9 +51,7 @@ export default function Register() {
       await login(form.email.trim(), form.password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(
-        err?.response?.data?.error ?? 'No pudimos crear la cuenta. Inténtalo de nuevo.'
-      );
+      setError(errorMessage(err, t, t('auth.createFailed')));
       setBusy(false);
     }
   };
@@ -61,21 +64,21 @@ export default function Register() {
           Bootleg
         </div>
 
-        <h1 className="auth-title">Crea tu cuenta</h1>
-        <p className="auth-sub">Empieza a escuchar en segundos.</p>
+        <h1 className="auth-title">{t('auth.createAccount')}</h1>
+        <p className="auth-sub">{t('auth.createTagline')}</p>
 
         <form className="auth-form" onSubmit={submit}>
           {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
           <label className="field">
-            <span className="field-label">Nombre</span>
+            <span className="field-label">{t('auth.yourName')}</span>
             <div className="input-group">
               <UserIcon size={20} />
               <input
                 className="input"
                 value={form.nombre}
                 onChange={update('nombre')}
-                placeholder="Tu nombre"
+                placeholder={t('auth.namePlaceholder')}
                 autoComplete="name"
                 maxLength={100}
                 required
@@ -84,7 +87,7 @@ export default function Register() {
           </label>
 
           <label className="field">
-            <span className="field-label">Correo</span>
+            <span className="field-label">{t('auth.email')}</span>
             <div className="input-group">
               <UserIcon size={20} />
               <input
@@ -92,7 +95,7 @@ export default function Register() {
                 type="email"
                 value={form.email}
                 onChange={update('email')}
-                placeholder="tu@correo.com"
+                placeholder={t('auth.emailPlaceholder')}
                 autoComplete="email"
                 required
               />
@@ -100,14 +103,14 @@ export default function Register() {
           </label>
 
           <label className="field">
-            <span className="field-label">Contraseña</span>
+            <span className="field-label">{t('auth.password')}</span>
             <div className="input-group">
               <input
                 className="input"
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={update('password')}
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t('auth.passwordPlaceholder')}
                 autoComplete="new-password"
                 required
                 style={{ paddingRight: 44 }}
@@ -116,7 +119,9 @@ export default function Register() {
                 type="button"
                 className="input-clear"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-label={
+                  showPassword ? t('auth.hidePassword') : t('auth.showPassword')
+                }
               >
                 {showPassword ? <CloseIcon size={18} /> : <CheckIcon size={18} />}
               </button>
@@ -128,21 +133,25 @@ export default function Register() {
                     <span key={i} className={strength >= i ? `is-on level-${strength}` : ''} />
                   ))}
                 </div>
-                <span className="field-hint">{STRENGTH[strength]}</span>
+                <span className="field-hint">{t(STRENGTH_KEYS[strength])}</span>
               </div>
             )}
           </label>
 
           <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
-            {busy ? 'Creando cuenta…' : 'Registrarse'}
+            {busy ? t('auth.creating') : t('auth.register')}
           </button>
         </form>
 
         <hr className="auth-divider" />
 
         <p className="auth-alt">
-          ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
+          {t('auth.haveAccount')} <Link to="/login">{t('auth.signInCta')}</Link>
         </p>
+
+        <div className="auth-lang">
+          <LanguageSwitch />
+        </div>
       </div>
     </div>
   );

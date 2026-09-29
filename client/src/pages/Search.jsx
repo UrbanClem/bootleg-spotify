@@ -7,14 +7,23 @@ import Artwork from '../components/Artwork';
 import { Alert, EmptyState, Spinner } from '../components/Feedback';
 import { SearchIcon, CloseIcon, MusicIcon } from '../components/icons';
 import { errorMessage, coverStyle } from '../utils';
+import { useI18n } from '../i18n';
 
+/**
+ * Result categories. The ids double as query-string tab names, so they stay in
+ * Spanish regardless of the active UI language; only the labels are localised.
+ */
 const TABS = [
-  { id: 'todo', label: 'Todo' },
-  { id: 'canciones', label: 'Canciones' },
-  { id: 'albumes', label: 'Álbumes' },
-  { id: 'artistas', label: 'Artistas' }
+  { id: 'todo', labelKey: 'tab.all' },
+  { id: 'canciones', labelKey: 'search.songs' },
+  { id: 'albumes', labelKey: 'search.albums' },
+  { id: 'artistas', labelKey: 'search.artists' }
 ];
 
+/**
+ * Genre values stored in `album.genero`. These are catalogue data rather than
+ * UI copy, so they are searched for verbatim and never translated.
+ */
 const BROWSE = [
   'Synth-pop', 'Post-rock', 'Indie tropical', 'Alt rock', 'Indie folk',
   'Punk', 'Folktronica', 'Electronica', 'Indie rock', 'Neo soul',
@@ -28,6 +37,7 @@ const BROWSE = [
  * and the active tab only decides what gets rendered.
  */
 export default function Search() {
+  const { t } = useI18n();
   const [params, setParams] = useSearchParams();
   const query = params.get('q') ?? '';
   const [draft, setDraft] = useState(query);
@@ -63,7 +73,7 @@ export default function Search() {
         setResults({ songs: s.data, albums: a.data, artists: ar.data });
       })
       .catch((err) => {
-        if (alive) setError(errorMessage(err, 'La búsqueda falló.'));
+        if (alive) setError(errorMessage(err, t, t('search.failed')));
       })
       .finally(() => alive && setLoading(false));
 
@@ -99,8 +109,8 @@ export default function Search() {
               className="input search-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="¿Qué quieres escuchar?"
-              aria-label="Buscar"
+              placeholder={t('search.placeholder')}
+              aria-label={t('search.label')}
               autoFocus
             />
             {draft && (
@@ -112,7 +122,7 @@ export default function Search() {
                   setParams({}, { replace: true });
                   inputRef.current?.focus();
                 }}
-                aria-label="Limpiar búsqueda"
+                aria-label={t('search.clear')}
               >
                 <CloseIcon size={18} />
               </button>
@@ -130,7 +140,7 @@ export default function Search() {
       {!query.trim() && (
         <section className="section">
           <div className="section-head">
-            <h2 className="section-title">Explorar por género</h2>
+            <h2 className="section-title">{t('search.browseByGenre')}</h2>
           </div>
           <div className="genre-grid">
             {BROWSE.map((genre) => (
@@ -150,17 +160,17 @@ export default function Search() {
       )}
 
       {query.trim() && !loading && (
-        <div className="segmented" role="tablist">
-          {TABS.map((t) => (
+        <div className="filter-chips" role="tablist">
+          {TABS.map((entry) => (
             <button
-              key={t.id}
+              key={entry.id}
               type="button"
               role="tab"
-              aria-selected={tab === t.id}
-              className={tab === t.id ? 'is-active' : ''}
-              onClick={() => setTab(t.id)}
+              aria-selected={tab === entry.id}
+              className={tab === entry.id ? 'is-active' : ''}
+              onClick={() => setTab(entry.id)}
             >
-              {t.label}
+              {t(entry.labelKey)}
             </button>
           ))}
         </div>
@@ -171,7 +181,7 @@ export default function Search() {
       {!loading && nothing && (
         <EmptyState
           icon={SearchIcon}
-          title={`Sin resultados para "${query}"`}
+          title={t('search.noResults', { query })}
           action={
             <button
               type="button"
@@ -181,11 +191,11 @@ export default function Search() {
                 setParams({}, { replace: true });
               }}
             >
-              Limpiar búsqueda
+              {t('search.clear')}
             </button>
           }
         >
-          Prueba con otro artista, álbum o género.
+          {t('search.noResultsText')}
         </EmptyState>
       )}
 
@@ -194,10 +204,10 @@ export default function Search() {
           {show('canciones') && results.songs.length > 0 && (
             <section className="section">
               <div className="section-head">
-                <h2 className="section-title">Canciones</h2>
+                <h2 className="section-title">{t('search.songs')}</h2>
                 {tab === 'todo' && counts.canciones > 5 && (
                   <button type="button" className="section-link" onClick={() => setTab('canciones')}>
-                    Ver todas
+                    {t('search.seeAllSongs')}
                   </button>
                 )}
               </div>
@@ -218,10 +228,10 @@ export default function Search() {
           {show('albumes') && results.albums.length > 0 && (
             <section className="section">
               <div className="section-head">
-                <h2 className="section-title">Álbumes</h2>
+                <h2 className="section-title">{t('search.albums')}</h2>
                 {tab === 'todo' && counts.albumes > 6 && (
                   <button type="button" className="section-link" onClick={() => setTab('albumes')}>
-                    Ver todos
+                    {t('search.seeAllAlbums')}
                   </button>
                 )}
               </div>
@@ -236,10 +246,10 @@ export default function Search() {
           {show('artistas') && results.artists.length > 0 && (
             <section className="section">
               <div className="section-head">
-                <h2 className="section-title">Artistas</h2>
+                <h2 className="section-title">{t('search.artists')}</h2>
                 {tab === 'todo' && counts.artistas > 6 && (
                   <button type="button" className="section-link" onClick={() => setTab('artistas')}>
-                    Ver todos
+                    {t('search.seeAllArtists')}
                   </button>
                 )}
               </div>
@@ -250,7 +260,11 @@ export default function Search() {
                     item={artist}
                     kind="artist"
                     title={artist.nombre_artista}
-                    subtitle={artist.total_canciones ? `${artist.total_canciones} canciones` : 'Artista'}
+                    subtitle={
+                      artist.total_canciones
+                        ? t('plural.song', { n: artist.total_canciones })
+                        : t('artist.generic')
+                    }
                     seed={artist.id_artista}
                   />
                 ))}

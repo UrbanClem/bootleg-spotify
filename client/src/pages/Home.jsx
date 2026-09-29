@@ -8,7 +8,8 @@ import MediaCard from '../components/MediaCard';
 import Artwork from '../components/Artwork';
 import { Alert, Spinner, EmptyState } from '../components/Feedback';
 import { MusicIcon, PlaylistIcon, PlayIcon, SearchIcon } from '../components/icons';
-import { greetingFor, shuffle, errorMessage } from '../utils';
+import { greetingKey, shuffle, errorMessage } from '../utils';
+import { useI18n } from '../i18n';
 
 /**
  * Landing page. Layout follows Spotify: a grid of shortcut tiles, then shelves
@@ -17,6 +18,7 @@ import { greetingFor, shuffle, errorMessage } from '../utils';
 export default function Home() {
   const { user } = useAuth();
   const { playSong, playNextInQueue } = usePlayer();
+  const { t } = useI18n();
 
   const [playlists, setPlaylists] = useState([]);
   const [albums, setAlbums] = useState([]);
@@ -41,7 +43,7 @@ export default function Home() {
         setArtists(ar.data);
         setSongs(s.data);
       })
-      .catch((err) => alive && setError(errorMessage(err, 'No se pudo cargar tu inicio.')))
+      .catch((err) => alive && setError(errorMessage(err, t, t('home.loadError'))))
       .finally(() => alive && setLoading(false));
 
     return () => {
@@ -79,8 +81,8 @@ export default function Home() {
 
       <div className="greeting">
         <div>
-          <h1 className="greeting-title">{greetingFor()}</h1>
-          {user && <p className="greeting-sub">Todo lo que te gusta, en un solo sitio.</p>}
+          <h1 className="greeting-title">{t(greetingKey())}</h1>
+          {user && <p className="greeting-sub">{t('home.subtitle')}</p>}
         </div>
       </div>
 
@@ -107,13 +109,13 @@ export default function Home() {
           >
             <SearchIcon size={26} />
           </div>
-          <span className="shortcut-title">Buscar música</span>
+          <span className="shortcut-title">{t('home.searchMusic')}</span>
         </Link>
       </div>
 
       <Shelf
-        title="Hecho para ti"
-        subtitle="Una selección del catálogo"
+        title={t('home.madeForYou')}
+        subtitle={t('home.madeForYouSub')}
         items={mix}
         kind="song"
         onPlay={(song) => playSong(song, mix)}
@@ -134,7 +136,7 @@ export default function Home() {
               type="button"
               className="card-play"
               onClick={() => playSong(song, mix)}
-              aria-label={`Reproducir ${song.titulo}`}
+              aria-label={t('track.play', { title: song.titulo })}
             >
               <PlayIcon size={18} />
             </button>
@@ -142,12 +144,12 @@ export default function Home() {
         )}
       />
 
-      <Shelf title="Tus playlists" to="/library" items={playlists} kind="playlist" onPlay />
+      <Shelf title={t('home.yourPlaylists')} to="/library" items={playlists} kind="playlist" onPlay />
 
-      <Shelf title="Álbumes nuevos" to="/search" items={newReleases} kind="album" onPlay />
+      <Shelf title={t('home.newAlbums')} to="/search" items={newReleases} kind="album" onPlay />
 
       <Shelf
-        title="Artistas que te gustan"
+        title={t('home.artistsYouLike')}
         to="/search"
         items={topArtists}
         kind="artist"
@@ -156,7 +158,11 @@ export default function Home() {
             item={artist}
             kind="artist"
             title={artist.nombre_artista}
-            subtitle={artist.total_canciones ? `${artist.total_canciones} canciones` : 'Artista'}
+            subtitle={
+              artist.total_canciones
+                ? t('plural.song', { n: artist.total_canciones })
+                : t('artist.generic')
+            }
             seed={artist.id_artista}
           />
         )}
@@ -165,7 +171,7 @@ export default function Home() {
       {mix.length > 0 && (
         <section className="section">
           <div className="section-head">
-            <h2 className="section-title">Populares ahora</h2>
+            <h2 className="section-title">{t('home.popularNow')}</h2>
           </div>
           <div className="panel">
             <div className="track-list">
@@ -176,7 +182,7 @@ export default function Home() {
                     type="button"
                     className="mix-art"
                     onClick={() => playSong(song, mix)}
-                    aria-label={`Reproducir ${song.titulo}`}
+                    aria-label={t('track.play', { title: song.titulo })}
                   >
                     <Artwork
                       src={song.portada_album ? `/uploads/images/${song.portada_album}` : null}
@@ -194,7 +200,7 @@ export default function Home() {
                     className="btn btn--outline btn--sm"
                     onClick={() => playNextInQueue(song)}
                   >
-                    Reproducir después
+                    {t('player.playNext')}
                   </button>
                 </div>
               ))}
@@ -206,14 +212,14 @@ export default function Home() {
       {playlists.length === 0 && albums.length === 0 && (
         <EmptyState
           icon={MusicIcon}
-          title="Tu biblioteca está vacía"
+          title={t('home.emptyTitle')}
           action={
             <Link className="btn btn--primary" to="/search">
-              Explorar el catálogo
+              {t('home.browseCatalogue')}
             </Link>
           }
         >
-          Crea tu primera playlist o explora los álbumes disponibles.
+          {t('home.emptyText')}
         </EmptyState>
       )}
     </div>

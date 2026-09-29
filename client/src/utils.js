@@ -21,14 +21,6 @@ export function toIsoDate(value) {
   return d.toISOString().slice(0, 10);
 }
 
-/** ISO date -> localised long date, or '' when missing. */
-export function formatDate(value, locale = 'es-ES') {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
 /**
  * Stable hash so a given album/artist always gets the same placeholder
  * gradient. Without this, missing covers would all look identical and the
@@ -64,13 +56,13 @@ export function heroTint(key) {
   return `var(--cover-${coverIndex(key)})`;
 }
 
-/** Time-of-day greeting used on the home page. */
-export function greetingFor(date = new Date()) {
+/** Time-of-day greeting key used on the home page. */
+export function greetingKey(date = new Date()) {
   const h = date.getHours();
-  if (h < 6) return 'Buenas noches';
-  if (h < 12) return 'Buenos días';
-  if (h < 19) return 'Buenas tardes';
-  return 'Buenas noches';
+  if (h < 6) return 'greeting.night';
+  if (h < 12) return 'greeting.morning';
+  if (h < 19) return 'greeting.afternoon';
+  return 'greeting.evening';
 }
 
 /** Shuffle a copy of an array (Fisher-Yates). */
@@ -83,7 +75,21 @@ export function shuffle(list) {
   return out;
 }
 
-/** Error message from an axios rejection, falling back to a generic string. */
-export function errorMessage(err, fallback = 'Algo salió mal. Intenta de nuevo.') {
-  return err?.response?.data?.error || err?.message || fallback;
+/**
+ * Localised message for an axios rejection.
+ *
+ * The API tags every error with a stable `code`; `translate` is called with
+ * `api_error.<code>` so a localised string wins. The server's own Spanish
+ * `error` field is only used for codes this build does not know about, and the
+ * caller's translated fallback covers requests that never reached the server
+ * (offline, DNS, timeout) where there is no response body at all.
+ */
+export function errorMessage(err, t, fallback) {
+  const data = err?.response?.data;
+  if (data?.code) {
+    const key = `api_error.${data.code}`;
+    const localised = t(key);
+    if (localised !== key) return localised;
+  }
+  return data?.error || err?.message || fallback;
 }

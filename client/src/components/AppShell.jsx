@@ -10,6 +10,7 @@ import Modal from './Modal';
 import { Alert } from './Feedback';
 import api from '../api';
 import { errorMessage } from '../utils';
+import { useI18n } from '../i18n';
 
 /**
  * Application chrome: sidebar, sticky top bar, scrollable outlet, optional
@@ -106,6 +107,7 @@ export default function AppShell() {
 }
 
 function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -115,7 +117,7 @@ function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Ponle un nombre a la playlist.');
+      setError(t('createPlaylist.nameRequired'));
       return;
     }
 
@@ -129,7 +131,7 @@ function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
       });
       onCreated(data.id);
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo crear la playlist.'));
+      setError(errorMessage(err, t, t('createPlaylist.failed')));
       setBusy(false);
     }
   };
@@ -137,27 +139,27 @@ function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
   if (!canCreate) {
     return (
       <Modal
-        title="Crear playlist"
+        title={t('createPlaylist.title')}
         onClose={onClose}
         footer={
           <button type="button" className="btn btn--primary" onClick={onClose}>
-            Entendido
+            {t('common.gotIt')}
           </button>
         }
       >
-        <Alert variant="info">Inicia sesión para poder crear playlists.</Alert>
+        <Alert variant="info">{t('library.sidebarSignedOut')}</Alert>
       </Modal>
     );
   }
 
   return (
     <Modal
-      title="Crear playlist"
+      title={t('createPlaylist.title')}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -165,7 +167,7 @@ function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
             className="btn btn--primary"
             disabled={busy}
           >
-            {busy ? 'Creando…' : 'Crear'}
+            {busy ? t('common.creating') : t('common.create')}
           </button>
         </>
       }
@@ -174,23 +176,23 @@ function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
         {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
         <label className="field">
-          <span className="field-label">Nombre</span>
+          <span className="field-label">{t('createPlaylist.nameLabel')}</span>
           <input
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Mi playlist"
+            placeholder={t('createPlaylist.namePlaceholder')}
             maxLength={120}
           />
         </label>
 
         <label className="field">
-          <span className="field-label">Descripción</span>
+          <span className="field-label">{t('createPlaylist.descriptionLabel')}</span>
           <textarea
             className="input"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="¿De qué va esta playlist?"
+            placeholder={t('createPlaylist.descriptionPlaceholder')}
             maxLength={500}
           />
         </label>
@@ -202,7 +204,7 @@ function CreatePlaylistModal({ onClose, onCreated, canCreate }) {
             onChange={(e) => setIsPrivate(e.target.checked)}
           />
           <span className="switch-track" />
-          <span>Privada</span>
+          <span>{t('createPlaylist.private')}</span>
         </label>
       </form>
     </Modal>

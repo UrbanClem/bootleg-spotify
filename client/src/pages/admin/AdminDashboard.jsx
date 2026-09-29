@@ -3,16 +3,18 @@ import { Link } from 'react-router-dom';
 import api from '../../api';
 import { Alert, Spinner } from '../../components/Feedback';
 import { errorMessage } from '../../utils';
+import { useI18n } from '../../i18n';
 
 const TILES = [
-  { key: 'songs', label: 'Canciones', to: '/admin/songs', icon: '♫' },
-  { key: 'albums', label: 'Álbumes', to: '/admin/albums', icon: '◉' },
-  { key: 'artists', label: 'Artistas', to: '/admin/artists', icon: '☺' },
-  { key: 'users', label: 'Usuarios', to: '/admin/users', icon: '⚑' }
+  { key: 'songs', labelKey: 'admin.songs', to: '/admin/songs', icon: '♫' },
+  { key: 'albums', labelKey: 'admin.albums', to: '/admin/albums', icon: '◉' },
+  { key: 'artists', labelKey: 'admin.artists', to: '/admin/artists', icon: '☺' },
+  { key: 'users', labelKey: 'admin.users', to: '/admin/users', icon: '⚑' }
 ];
 
 /** Catalogue overview plus the most recent sign-ups. */
 export default function AdminDashboard() {
+  const { t, n } = useI18n();
   const [data, setData] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,13 +40,13 @@ export default function AdminDashboard() {
         });
         setUsers(u.data);
       })
-      .catch((err) => alive && setError(errorMessage(err, 'No se pudo cargar el panel.')))
+      .catch((err) => alive && setError(errorMessage(err, t, t('admin.loadError'))))
       .finally(() => alive && setLoading(false));
 
     return () => {
       alive = false;
     };
-  }, []);
+  }, [t]);
 
   if (loading) return <Spinner center />;
 
@@ -57,35 +59,36 @@ export default function AdminDashboard() {
       )}
 
       <div className="stat-grid">
-        {TILES.map((t) => (
-          <Link key={t.key} className="stat stat--link" to={t.to}>
-            <div className="stat-label">{t.label}</div>
-            <div className="stat-value">{data?.[t.key] ?? '—'}</div>
-            <span className="stat-hint">Administrar →</span>
+        {TILES.map((tile) => (
+          <Link key={tile.key} className="stat stat--link" to={tile.to}>
+            <div className="stat-label">{t(tile.labelKey)}</div>
+            <div className="stat-value">
+              {data ? n(data[tile.key]) : t('common.unknown')}
+            </div>
+            <span className="stat-hint">{t('admin.manage')}</span>
           </Link>
         ))}
       </div>
 
       <div className="detail-grid" style={{ padding: 0, marginTop: 32 }}>
         <div className="panel">
-          <h2 className="panel-title">Canciones con audio</h2>
+          <h2 className="panel-title">{t('admin.withAudioTitle')}</h2>
           <p style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.04em' }}>
-            {data?.withAudio ?? 0}{' '}
+            {n(data?.withAudio ?? 0)}{' '}
             <span className="text-subdued" style={{ fontSize: 16, fontWeight: 500 }}>
-              de {data?.songs ?? 0}
+              {t('admin.withAudioOf', { n: n(data?.songs ?? 0) })}
             </span>
           </p>
           <p className="text-subdued" style={{ fontSize: 14, marginTop: 8 }}>
-            Las canciones sin archivo no se pueden reproducir todavía. Sube el audio
-            desde la sección Canciones.
+            {t('admin.withAudioHint')}
           </p>
           <Link className="btn btn--primary btn--sm" to="/admin/songs" style={{ marginTop: 16 }}>
-            Gestionar canciones
+            {t('admin.manageSongs')}
           </Link>
         </div>
 
         <div className="panel">
-          <h2 className="panel-title">Usuarios recientes</h2>
+          <h2 className="panel-title">{t('admin.recentUsers')}</h2>
           <ul className="mini-list">
             {users.slice(0, 5).map((u) => (
               <li key={u.id_usuario}>
@@ -93,7 +96,7 @@ export default function AdminDashboard() {
                 <span className="mini-list-meta">{u.email}</span>
               </li>
             ))}
-            {users.length === 0 && <li className="text-subdued">Sin datos.</li>}
+            {users.length === 0 && <li className="text-subdued">{t('admin.noData')}</li>}
           </ul>
         </div>
       </div>

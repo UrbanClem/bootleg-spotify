@@ -20,7 +20,7 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Get albums error:', error);
-        res.status(500).json({ error: 'Error al obtener álbumes' });
+        res.status(500).json({ error: 'Error al obtener álbumes', code: 'albums_list_failed' });
     }
 });
 
@@ -36,7 +36,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         `, [req.params.id]);
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Álbum no encontrado' });
+            return res.status(404).json({ error: 'Álbum no encontrado', code: 'album_not_found' });
         }
 
         // Get songs in album
@@ -54,7 +54,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         res.json({ ...rows[0], canciones: songs });
     } catch (error) {
         console.error('Get album error:', error);
-        res.status(500).json({ error: 'Error al obtener álbum' });
+        res.status(500).json({ error: 'Error al obtener álbum', code: 'album_fetch_failed' });
     }
 });
 
@@ -71,7 +71,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         res.status(201).json({ message: 'Álbum creado exitosamente', id: result.insertId });
     } catch (error) {
         console.error('Create album error:', error);
-        res.status(500).json({ error: 'Error al crear álbum' });
+        res.status(500).json({ error: 'Error al crear álbum', code: 'album_create_failed' });
     }
 });
 
@@ -88,7 +88,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'Álbum actualizado exitosamente' });
     } catch (error) {
         console.error('Update album error:', error);
-        res.status(500).json({ error: 'Error al actualizar álbum' });
+        res.status(500).json({ error: 'Error al actualizar álbum', code: 'album_update_failed' });
     }
 });
 
@@ -99,7 +99,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'Álbum eliminado exitosamente' });
     } catch (error) {
         console.error('Delete album error:', error);
-        res.status(500).json({ error: 'Error al eliminar álbum' });
+        res.status(500).json({ error: 'Error al eliminar álbum', code: 'album_delete_failed' });
     }
 });
 

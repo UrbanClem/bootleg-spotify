@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../i18n';
 import Artwork from './Artwork';
 import {
   PlayIcon,
@@ -49,6 +50,7 @@ export function DetailHero({
  * Pages that need their own menu (rename, delete, ...) pass it as `children`.
  */
 export function DetailActions({ onPlay, isPlaying, hasAudio, children }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const timer = useRef(null);
 
@@ -82,8 +84,8 @@ export function DetailActions({ onPlay, isPlaying, hasAudio, children }) {
         className="play-button play-button--lg"
         onClick={onPlay}
         disabled={!hasAudio}
-        aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-        title={hasAudio ? undefined : 'Este contenido aún no tiene audio cargado'}
+        aria-label={isPlaying ? t('player.pause') : t('player.play')}
+        title={hasAudio ? undefined : t('album.noAudioYet')}
       >
         {isPlaying ? <PauseIcon size={26} /> : <PlayIcon size={26} />}
       </button>
@@ -92,8 +94,8 @@ export function DetailActions({ onPlay, isPlaying, hasAudio, children }) {
         type="button"
         className={`toggle-btn${copied ? ' is-active' : ''}`}
         onClick={share}
-        aria-label={copied ? 'Enlace copiado' : 'Compartir'}
-        title={copied ? 'Enlace copiado' : 'Copiar enlace'}
+        aria-label={copied ? t('share.copied') : t('share.copy')}
+        title={copied ? t('share.copied') : t('share.copyTitle')}
       >
         {copied ? <CheckIcon size={26} /> : <ShareIcon size={26} />}
       </button>

@@ -58,7 +58,7 @@ const imageUpload = multer({
 // Upload audio file
 router.post('/audio', authenticateToken, requireAdmin, audioUpload.single('audio'), (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'No se subió ningún archivo' });
+        return res.status(400).json({ error: 'No se subió ningún archivo', code: 'upload_no_file' });
     }
     res.json({
         message: 'Audio subido exitosamente',
@@ -70,7 +70,7 @@ router.post('/audio', authenticateToken, requireAdmin, audioUpload.single('audio
 // Upload image file
 router.post('/image', authenticateToken, requireAdmin, imageUpload.single('image'), (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'No se subió ningún archivo' });
+        return res.status(400).json({ error: 'No se subió ningún archivo', code: 'upload_no_file' });
     }
     res.json({
         message: 'Imagen subida exitosamente',

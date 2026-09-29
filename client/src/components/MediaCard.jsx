@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
+import { useI18n } from '../i18n';
 import Artwork from './Artwork';
 import { PlayIcon, PauseIcon, ArtistIcon, PlaylistIcon, AlbumIcon } from './icons';
 
@@ -28,6 +29,7 @@ export default function MediaCard({
 }) {
   const navigate = useNavigate();
   const { playSong, currentSong, isPlaying, togglePlay } = usePlayer();
+  const { t } = useI18n();
   const config = KIND[kind] ?? KIND.album;
 
   const label = title ?? item?.titulo ?? item?.nombre_artista ?? item?.nombre_playlist ?? '';
@@ -63,7 +65,7 @@ export default function MediaCard({
             icon={config.icon}
           />
           {badge && (
-            <span className="card-badge" title="Verificado">
+            <span className="card-badge" title={t('card.verified')}>
               <config.icon size={12} />
             </span>
           )}
@@ -72,9 +74,7 @@ export default function MediaCard({
           <div className="card-title" title={label}>
             {label}
           </div>
-          {verified && (
-            <span className="sr-only">Artista verificado</span>
-          )}
+          {verified && <span className="sr-only">{t('card.verifiedArtist')}</span>}
           {sub && (
             <div className="card-subtitle" title={sub}>
               {sub}
@@ -88,7 +88,7 @@ export default function MediaCard({
           type="button"
           className="card-play"
           onClick={handlePlay}
-          aria-label={showingPause ? `Pausar ${label}` : `Reproducir ${label}`}
+          aria-label={showingPause ? t('card.pause', { title: label }) : t('card.play', { title: label })}
         >
           {showingPause ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
         </button>

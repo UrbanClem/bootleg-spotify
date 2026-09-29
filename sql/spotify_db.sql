@@ -320,22 +320,6 @@ CREATE TABLE `historial_reproduccion_archivo` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `pagos`
---
-
-CREATE TABLE `pagos` (
-  `id_pago` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
-  `monto` decimal(10,2) NOT NULL,
-  `fecha_pago` datetime DEFAULT current_timestamp(),
-  `metodo_pago` varchar(50) DEFAULT NULL,
-  `estado` enum('Completado','Pendiente','Fallido') DEFAULT 'Pendiente',
-  `id_suscripcion` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `playlist`
 --
 
@@ -409,22 +393,6 @@ CREATE TABLE `seguidores` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `suscripciones`
---
-
-CREATE TABLE `suscripciones` (
-  `id_suscripcion` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
-  `tipo` enum('Free','Premium','Family','Student') DEFAULT 'Free',
-  `fecha_inicio` date NOT NULL,
-  `fecha_vencimiento` date DEFAULT NULL,
-  `estado` enum('Activa','Cancelada','Expirada') DEFAULT 'Activa',
-  `costo_mensual` decimal(10,2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `usuario`
 --
 
@@ -435,8 +403,7 @@ CREATE TABLE `usuario` (
   `password_hash` varchar(255) NOT NULL,
   `salt` varchar(32) NOT NULL,
   `fecha_registro` date NOT NULL,
-  `tipo_cuenta` enum('Free','Premium','Admin') DEFAULT 'Free',
-  `saldo` decimal(10,2) DEFAULT 0.00,
+  `tipo_cuenta` enum('User','Admin') DEFAULT 'User',
   `fecha_nacimiento` date DEFAULT NULL,
   `ultima_conexion` datetime DEFAULT NULL,
   `pais` varchar(100) DEFAULT NULL,
@@ -447,9 +414,9 @@ CREATE TABLE `usuario` (
 -- Volcado de datos para la tabla `usuario`
 --
 
-INSERT INTO `usuario` (`id_usuario`, `nombre`, `email`, `password_hash`, `salt`, `fecha_registro`, `tipo_cuenta`, `saldo`, `fecha_nacimiento`, `ultima_conexion`, `pais`, `version_row`) VALUES
-(13, 'Alejandro Rodriguez', 'test@email.com', '$2y$10$HTqezdHyRuZDdaeoUiXCpeXAAIw/aUE08d0COeaU6AQn7y8sQX10i', '', '2025-11-07', 'Admin', 0.00, '1990-01-01', '2025-11-21 07:59:28', 'México', 1),
-(16, 'premium', 'premium@email.com', '$2y$10$1Qd77akWpHd1tVczSIZeH.j6uF9OKxPfdoUZ8RL7UrMhSpcV78GxG', '', '2025-11-19', 'Premium', 0.00, '1990-01-01', '2025-11-21 08:08:49', 'Desconocido', 1);
+INSERT INTO `usuario` (`id_usuario`, `nombre`, `email`, `password_hash`, `salt`, `fecha_registro`, `tipo_cuenta`, `fecha_nacimiento`, `ultima_conexion`, `pais`, `version_row`) VALUES
+(13, 'Alejandro Rodriguez', 'test@email.com', '$2y$10$HTqezdHyRuZDdaeoUiXCpeXAAIw/aUE08d0COeaU6AQn7y8sQX10i', '', '2025-11-07', 'Admin', '1990-01-01', '2025-11-21 07:59:28', 'México', 1),
+(16, 'Sara Mendoza', 'user@email.com', '$2y$10$1Qd77akWpHd1tVczSIZeH.j6uF9OKxPfdoUZ8RL7UrMhSpcV78GxG', '', '2025-11-19', 'User', '1995-04-12', '2025-11-21 08:08:49', 'España', 1);
 
 --
 -- Disparadores `usuario`
@@ -615,14 +582,6 @@ ALTER TABLE `historial_reproduccion_archivo`
   ADD KEY `idx_archivo_fecha` (`fecha_reproduccion`);
 
 --
--- Indices de la tabla `pagos`
---
-ALTER TABLE `pagos`
-  ADD PRIMARY KEY (`id_pago`),
-  ADD KEY `id_suscripcion` (`id_suscripcion`),
-  ADD KEY `idx_usuario_fecha` (`id_usuario`,`fecha_pago`);
-
---
 -- Indices de la tabla `playlist`
 --
 ALTER TABLE `playlist`
@@ -654,14 +613,6 @@ ALTER TABLE `seguidores`
   ADD PRIMARY KEY (`id_usuario`,`id_usuario_seguido`),
   ADD KEY `id_usuario_seguido` (`id_usuario_seguido`),
   ADD KEY `idx_fecha_seguimiento` (`fecha_seguimiento`);
-
---
--- Indices de la tabla `suscripciones`
---
-ALTER TABLE `suscripciones`
-  ADD PRIMARY KEY (`id_suscripcion`),
-  ADD KEY `idx_usuario_estado` (`id_usuario`,`estado`),
-  ADD KEY `idx_vencimiento` (`fecha_vencimiento`);
 
 --
 -- Indices de la tabla `usuario`
@@ -701,12 +652,6 @@ ALTER TABLE `historial_reproduccion`
   MODIFY `id_reproduccion` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT de la tabla `pagos`
---
-ALTER TABLE `pagos`
-  MODIFY `id_pago` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT de la tabla `playlist`
 --
 ALTER TABLE `playlist`
@@ -717,12 +662,6 @@ ALTER TABLE `playlist`
 --
 ALTER TABLE `recomendaciones`
   MODIFY `id_recomendacion` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `suscripciones`
---
-ALTER TABLE `suscripciones`
-  MODIFY `id_suscripcion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario`
@@ -762,13 +701,6 @@ ALTER TABLE `historial_reproduccion`
   ADD CONSTRAINT `historial_reproduccion_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `cancion` (`id_cancion`) ON DELETE CASCADE;
 
 --
--- Filtros para la tabla `pagos`
---
-ALTER TABLE `pagos`
-  ADD CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE,
-  ADD CONSTRAINT `pagos_ibfk_2` FOREIGN KEY (`id_suscripcion`) REFERENCES `suscripciones` (`id_suscripcion`);
-
---
 -- Filtros para la tabla `playlist`
 --
 ALTER TABLE `playlist`
@@ -795,11 +727,6 @@ ALTER TABLE `seguidores`
   ADD CONSTRAINT `seguidores_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE,
   ADD CONSTRAINT `seguidores_ibfk_2` FOREIGN KEY (`id_usuario_seguido`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE;
 
---
--- Filtros para la tabla `suscripciones`
---
-ALTER TABLE `suscripciones`
-  ADD CONSTRAINT `suscripciones_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

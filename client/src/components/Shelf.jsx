@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import MediaCard from './MediaCard';
 import { CardSkeleton } from './Feedback';
+import { useI18n } from '../i18n';
 
 const KIND = {
   album: 'id_album',
@@ -17,6 +18,8 @@ const KIND = {
  * horizontal carousel feel better than a wrapping row.
  */
 export default function Shelf({ title, subtitle, to, items = [], kind = 'album', loading, renderItem, onPlay, emptyNote }) {
+  const { t } = useI18n();
+
   if (!loading && items.length === 0) return null;
 
   // Pick the id column that matches what the shelf is actually showing. A song
@@ -37,7 +40,7 @@ export default function Shelf({ title, subtitle, to, items = [], kind = 'album',
           </div>
           {to && (
             <Link className="section-link" to={to}>
-              Mostrar todo
+              {t('shelf.seeAll')}
             </Link>
           )}
         </div>

@@ -7,12 +7,12 @@ function authenticateToken(req, res, next) {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ error: 'Token requerido' });
+        return res.status(401).json({ error: 'Token requerido', code: 'auth_token_required' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
-            return res.status(403).json({ error: 'Token inválido o expirado' });
+            return res.status(403).json({ error: 'Token inválido o expirado', code: 'auth_token_invalid' });
         }
         req.user = user;
         next();
@@ -21,7 +21,7 @@ function authenticateToken(req, res, next) {
 
 function requireAdmin(req, res, next) {
     if (req.user.tipo_cuenta !== 'Admin') {
-        return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de administrador.' });
+        return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de administrador.', code: 'auth_admin_required' });
     }
     next();
 }

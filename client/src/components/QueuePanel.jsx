@@ -2,8 +2,11 @@ import { Link } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
 import Artwork from './Artwork';
 import { CloseIcon, MusicIcon } from './icons';
+import { useI18n } from '../i18n';
 
 function QueueEntry({ song, index, playing, onSelect }) {
+  const { t } = useI18n();
+
   return (
     <button
       type="button"
@@ -22,7 +25,9 @@ function QueueEntry({ song, index, playing, onSelect }) {
         <span className="queue-item-title" title={song.titulo}>
           {song.titulo}
         </span>
-        <span className="queue-item-artist">{song.nombre_artista || '—'}</span>
+        <span className="queue-item-artist">
+          {song.nombre_artista || t('track.unknownArtist')}
+        </span>
       </div>
     </button>
   );
@@ -30,25 +35,26 @@ function QueueEntry({ song, index, playing, onSelect }) {
 
 export default function QueuePanel({ onClose }) {
   const { currentSong, queue, currentIndex, playAt } = usePlayer();
+  const { t } = useI18n();
 
   const upcoming = queue.filter((_, i) => i !== currentIndex);
 
   return (
-    <aside className="queue-panel" aria-label="Cola de reproducción">
+    <aside className="queue-panel" aria-label={t('player.queuePanel')}>
       <div className="queue-panel-head">
-        <span>Cola</span>
+        <span>{t('player.queue')}</span>
         <button
           type="button"
           className="toggle-btn"
           onClick={onClose}
-          aria-label="Cerrar cola"
+          aria-label={t('player.closeQueue')}
         >
           <CloseIcon size={18} />
         </button>
       </div>
 
       <div className="queue-panel-body">
-        <div className="queue-section-title">Reproduciendo ahora</div>
+        <div className="queue-section-title">{t('player.nowPlaying')}</div>
 
         {currentSong ? (
           <div className="queue-now">
@@ -74,20 +80,18 @@ export default function QueuePanel({ onClose }) {
               </Link>
             ) : (
               <span className="queue-now-artist">
-                {currentSong.nombre_artista || '—'}
+                {currentSong.nombre_artista || t('track.unknownArtist')}
               </span>
             )}
           </div>
         ) : (
-          <p className="queue-empty">No hay nada reproduciéndose.</p>
+          <p className="queue-empty">{t('player.queueEmptyIdle')}</p>
         )}
 
-        <div className="queue-section-title">A continuación</div>
+        <div className="queue-section-title">{t('player.upNext')}</div>
 
         {upcoming.length === 0 ? (
-          <p className="queue-empty">
-            La cola está vacía. Añade canciones desde cualquier lista.
-          </p>
+          <p className="queue-empty">{t('player.queueEmptyHint')}</p>
         ) : (
           upcoming.map((song, i) => (
             <QueueEntry

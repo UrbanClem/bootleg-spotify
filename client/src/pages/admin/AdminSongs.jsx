@@ -6,6 +6,7 @@ import {
   PlusIcon, EditIcon, TrashIcon, SearchIcon, MusicIcon, PlayIcon
 } from '../../components/icons';
 import { errorMessage, formatDuration, toIsoDate } from '../../utils';
+import { useI18n } from '../../i18n';
 
 const EMPTY = {
   titulo: '',
@@ -19,6 +20,7 @@ const EMPTY = {
 
 /** Full CRUD over the `cancion` table, including audio upload. */
 export default function AdminSongs() {
+  const { t, n } = useI18n();
   const [songs, setSongs] = useState([]);
   const [artists, setArtists] = useState([]);
   const [albums, setAlbums] = useState([]);
@@ -41,7 +43,7 @@ export default function AdminSongs() {
       setAlbums(al.data);
       setError('');
     } catch (err) {
-      setError(errorMessage(err, 'No se pudieron cargar las canciones.'));
+      setError(errorMessage(err, t, t('admin.loadSongsError')));
     } finally {
       setLoading(false);
     }
@@ -63,15 +65,13 @@ export default function AdminSongs() {
   }, [songs, query]);
 
   const remove = async (song) => {
-    if (!window.confirm(`¿Eliminar «${song.titulo}»? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    if (!window.confirm(t('admin.confirmDeleteSong', { name: song.titulo }))) return;
     try {
       await api.delete(`/songs/${song.id_cancion}`);
-      setNotice({ type: 'success', text: 'Canción eliminada.' });
+      setNotice({ type: 'success', text: t('admin.songDeleted') });
       load();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo eliminar.'));
+      setError(errorMessage(err, t, t('admin.songDeleteError')));
     }
   };
 
@@ -81,9 +81,13 @@ export default function AdminSongs() {
     <>
       <div className="admin-head">
         <div>
-          <h2 className="section-title">Canciones ({songs.length})</h2>
+          <h2 className="section-title">
+            {t('admin.songs')} ({n(songs.length)})
+          </h2>
           <p className="text-subdued" style={{ fontSize: 14 }}>
-            {songs.filter((s) => s.archivo_audio).length} con audio cargado
+            {t('admin.withAudioCount', {
+              n: n(songs.filter((s) => s.archivo_audio).length)
+            })}
           </p>
         </div>
         <div className="row">
@@ -93,8 +97,8 @@ export default function AdminSongs() {
               className="input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filtrar canciones"
-              aria-label="Filtrar canciones"
+              placeholder={t('admin.filterSongs')}
+              aria-label={t('admin.filterSongs')}
             />
           </div>
           <button
@@ -102,7 +106,7 @@ export default function AdminSongs() {
             className="btn btn--primary"
             onClick={() => setEditing({ ...EMPTY })}
           >
-            <PlusIcon size={16} /> Nueva canción
+            <PlusIcon size={16} /> {t('admin.newSong')}
           </button>
         </div>
       </div>
@@ -122,8 +126,8 @@ export default function AdminSongs() {
 
       <div style={{ marginTop: 24 }}>
         {visible.length === 0 ? (
-          <EmptyState icon={MusicIcon} title="Sin canciones">
-            Crea la primera para empezar el catálogo.
+          <EmptyState icon={MusicIcon} title={t('admin.noSongs')}>
+            {t('admin.noSongsHint')}
           </EmptyState>
         ) : (
           <div className="table-wrap">
@@ -131,11 +135,11 @@ export default function AdminSongs() {
               <thead>
                 <tr>
                   <th className="num">#</th>
-                  <th>Título</th>
-                  <th>Artista</th>
-                  <th>Álbum</th>
-                  <th className="num">Duración</th>
-                  <th>Audio</th>
+                  <th>{t('field.title')}</th>
+                  <th>{t('field.artist')}</th>
+                  <th>{t('field.album')}</th>
+                  <th className="num">{t('admin.columnDuration')}</th>
+                  <th>{t('admin.columnAudio')}</th>
                   <th />
                 </tr>
               </thead>
@@ -149,8 +153,12 @@ export default function AdminSongs() {
                         {song.titulo}
                       </div>
                     </td>
-                    <td className="text-subdued">{song.nombre_artista ?? '—'}</td>
-                    <td className="text-subdued">{song.titulo_album ?? '—'}</td>
+                    <td className="text-subdued">
+                      {song.nombre_artista ?? t('common.unknown')}
+                    </td>
+                    <td className="text-subdued">
+                      {song.titulo_album ?? t('common.unknown')}
+                    </td>
                     <td className="num">{formatDuration(song.duracion)}</td>
                     <td>
                       {song.archivo_audio ? (
@@ -160,10 +168,10 @@ export default function AdminSongs() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <PlayIcon size={11} /> Listo
+                          <PlayIcon size={11} /> {t('admin.audioReady')}
                         </a>
                       ) : (
-                        <span className="tag tag--warning">Sin audio</span>
+                        <span className="tag tag--warning">{t('admin.audioMissing')}</span>
                       )}
                     </td>
                     <td>
@@ -172,7 +180,7 @@ export default function AdminSongs() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => setEditing(song)}
-                          aria-label={`Editar ${song.titulo}`}
+                          aria-label={t('admin.editAction', { name: song.titulo })}
                         >
                           <EditIcon size={16} />
                         </button>
@@ -180,7 +188,7 @@ export default function AdminSongs() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => remove(song)}
-                          aria-label={`Eliminar ${song.titulo}`}
+                          aria-label={t('admin.deleteAction', { name: song.titulo })}
                         >
                           <TrashIcon size={16} />
                         </button>
@@ -212,6 +220,7 @@ export default function AdminSongs() {
 }
 
 function SongModal({ song, artists, albums, onClose, onSaved }) {
+  const { t } = useI18n();
   const isNew = !song.id_cancion;
   const [form, setForm] = useState({
     titulo: song.titulo ?? '',
@@ -235,11 +244,11 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.titulo.trim()) {
-      setError('El título es obligatorio.');
+      setError(t('field.titleRequired'));
       return;
     }
     if (!form.id_artista) {
-      setError('Selecciona un artista.');
+      setError(t('field.selectArtist'));
       return;
     }
 
@@ -269,13 +278,13 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
 
       if (isNew) {
         await api.post('/songs', payload);
-        onSaved('Canción creada.');
+        onSaved(t('admin.songCreated'));
       } else {
         await api.put(`/songs/${song.id_cancion}`, payload);
-        onSaved('Canción actualizada.');
+        onSaved(t('admin.songUpdated'));
       }
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo guardar la canción.'));
+      setError(errorMessage(err, t, t('admin.songSaveError')));
       setBusy(false);
     }
   };
@@ -287,15 +296,15 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
 
   return (
     <Modal
-      title={isNew ? 'Nueva canción' : `Editar «${song.titulo}»`}
+      title={isNew ? t('admin.newSong') : t('admin.editSong', { name: song.titulo })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" form="song-form" className="btn btn--primary" disabled={busy}>
-            {busy ? 'Guardando…' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </>
       }
@@ -304,7 +313,7 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
         {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
         <label className="field">
-          <span className="field-label">Título</span>
+          <span className="field-label">{t('field.title')}</span>
           <input
             className="input"
             value={form.titulo}
@@ -316,14 +325,14 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
 
         <div className="form-grid">
           <label className="field">
-            <span className="field-label">Artista</span>
+            <span className="field-label">{t('field.artist')}</span>
             <select
               className="input"
               value={form.id_artista}
               onChange={update('id_artista')}
               required
             >
-              <option value="">Selecciona…</option>
+              <option value="">{t('field.select')}</option>
               {artists.map((a) => (
                 <option key={a.id_artista} value={a.id_artista}>
                   {a.nombre_artista}
@@ -333,9 +342,9 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
           </label>
 
           <label className="field">
-            <span className="field-label">Álbum</span>
+            <span className="field-label">{t('field.album')}</span>
             <select className="input" value={form.id_album} onChange={update('id_album')}>
-              <option value="">Sin álbum</option>
+              <option value="">{t('field.noAlbum')}</option>
               {albumOptions.map((a) => (
                 <option key={a.id_album} value={a.id_album}>
                   {a.titulo}
@@ -345,7 +354,7 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
           </label>
 
           <label className="field">
-            <span className="field-label">Duración (segundos)</span>
+            <span className="field-label">{t('field.duration')}</span>
             <input
               className="input"
               type="number"
@@ -356,7 +365,7 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
           </label>
 
           <label className="field">
-            <span className="field-label">Fecha de lanzamiento</span>
+            <span className="field-label">{t('field.releaseDate')}</span>
             <input
               className="input"
               type="date"
@@ -367,7 +376,7 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
         </div>
 
         <label className="field">
-          <span className="field-label">Letra</span>
+          <span className="field-label">{t('field.lyrics')}</span>
           <textarea
             className="input"
             value={form.letra}
@@ -379,14 +388,14 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
         <label className="switch">
           <input type="checkbox" checked={form.explicit} onChange={update('explicit')} />
           <span className="switch-track" />
-          <span>Contenido explícito</span>
+          <span>{t('field.explicitContent')}</span>
         </label>
 
         <div className="field">
-          <span className="field-label">Archivo de audio</span>
+          <span className="field-label">{t('field.audioFile')}</span>
           {song.archivo_audio && (
             <span className="field-hint">
-              Actual: <code>{song.archivo_audio}</code>
+              {t('field.currentFile', { file: song.archivo_audio })}
             </span>
           )}
           <input
@@ -396,7 +405,7 @@ function SongModal({ song, artists, albums, onClose, onSaved }) {
             onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
             style={{ paddingTop: 8 }}
           />
-          <span className="field-hint">MP3, WAV, OGG o M4A. Máximo 50 MB.</span>
+          <span className="field-hint">{t('field.audioHint')}</span>
         </div>
       </form>
     </Modal>

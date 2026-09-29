@@ -4,7 +4,8 @@ import Modal from '../../components/Modal';
 import { Alert, EmptyState, Spinner } from '../../components/Feedback';
 import { EditIcon, TrashIcon, SearchIcon, UserIcon } from '../../components/icons';
 import { useAuth } from '../../context/AuthContext';
-import { errorMessage, toIsoDate, formatDate } from '../../utils';
+import { errorMessage, toIsoDate } from '../../utils';
+import { useI18n } from '../../i18n';
 
 /**
  * User administration.
@@ -16,6 +17,7 @@ import { errorMessage, toIsoDate, formatDate } from '../../utils';
  */
 export default function AdminUsers() {
   const { user: me } = useAuth();
+  const { t, n } = useI18n();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,7 +32,7 @@ export default function AdminUsers() {
       setUsers(data);
       setError('');
     } catch (err) {
-      setError(errorMessage(err, 'No se pudieron cargar los usuarios.'));
+      setError(errorMessage(err, t, t('admin.loadUsersError')));
     } finally {
       setLoading(false);
     }
@@ -53,16 +55,16 @@ export default function AdminUsers() {
 
   const remove = async (target) => {
     if (target.id_usuario === me?.id_usuario) {
-      setError('No puedes eliminar tu propia cuenta.');
+      setError(t('admin.cannotDeleteSelf'));
       return;
     }
-    if (!window.confirm(`¿Eliminar a «${target.nombre}»?`)) return;
+    if (!window.confirm(t('admin.confirmDeleteUser', { name: target.nombre }))) return;
     try {
       await api.delete(`/users/${target.id_usuario}`);
-      setNotice({ type: 'success', text: 'Usuario eliminado.' });
+      setNotice({ type: 'success', text: t('admin.userDeleted') });
       load();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo eliminar.'));
+      setError(errorMessage(err, t, t('admin.userDeleteError')));
     }
   };
 
@@ -72,7 +74,9 @@ export default function AdminUsers() {
     <>
       <div className="admin-head">
         <div>
-          <h2 className="section-title">Usuarios ({users.length})</h2>
+          <h2 className="section-title">
+            {t('admin.users')} ({n(users.length)})
+          </h2>
         </div>
         <div className="row">
           <div className="input-group" style={{ flex: '0 1 260px' }}>
@@ -81,8 +85,8 @@ export default function AdminUsers() {
               className="input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filtrar usuarios"
-              aria-label="Filtrar usuarios"
+              placeholder={t('admin.filterUsers')}
+              aria-label={t('admin.filterUsers')}
             />
           </div>
         </div>
@@ -103,18 +107,18 @@ export default function AdminUsers() {
 
       <div style={{ marginTop: 24 }}>
         {visible.length === 0 ? (
-          <EmptyState icon={UserIcon} title="Sin usuarios" />
+          <EmptyState icon={UserIcon} title={t('admin.noUsers')} />
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
                   <th className="num">#</th>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>Cuenta</th>
-                  <th>País</th>
-                  <th>Registro</th>
+                  <th>{t('admin.columnName')}</th>
+                  <th>{t('admin.columnEmail')}</th>
+                  <th>{t('admin.columnAccount')}</th>
+                  <th>{t('admin.columnCountry')}</th>
+                  <th>{t('admin.columnSignedUp')}</th>
                   <th />
                 </tr>
               </thead>
@@ -125,20 +129,20 @@ export default function AdminUsers() {
                     <td className="cell-title">
                       {u.nombre}
                       {u.id_usuario === me?.id_usuario && (
-                        <span className="tag tag--green">Tú</span>
+                        <span className="tag tag--green">{t('common.you')}</span>
                       )}
                     </td>
                     <td className="text-subdued">{u.email}</td>
                     <td>
                       {u.tipo_cuenta === 'Admin' ? (
-                        <span className="tag tag--green">Admin</span>
+                        <span className="tag tag--green">{t('role.admin')}</span>
                       ) : (
-                        <span className="tag">Premium</span>
+                        <span className="tag">{t('role.user')}</span>
                       )}
                     </td>
-                    <td className="text-subdued">{u.pais ?? '—'}</td>
+                    <td className="text-subdued">{u.pais ?? t('common.unknown')}</td>
                     <td className="text-subdued">
-                      {u.fecha_registro ? toIsoDate(u.fecha_registro) : '—'}
+                      {u.fecha_registro ? toIsoDate(u.fecha_registro) : t('common.unknown')}
                     </td>
                     <td>
                       <div className="table-actions">
@@ -146,7 +150,7 @@ export default function AdminUsers() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => setEditing(u)}
-                          aria-label={`Editar ${u.nombre}`}
+                          aria-label={t('admin.editAction', { name: u.nombre })}
                         >
                           <EditIcon size={16} />
                         </button>
@@ -155,7 +159,7 @@ export default function AdminUsers() {
                           className="toggle-btn"
                           disabled={u.id_usuario === me?.id_usuario}
                           onClick={() => remove(u)}
-                          aria-label={`Eliminar ${u.nombre}`}
+                          aria-label={t('admin.deleteAction', { name: u.nombre })}
                         >
                           <TrashIcon size={16} />
                         </button>
@@ -185,6 +189,7 @@ export default function AdminUsers() {
 }
 
 function UserModal({ target, onClose, onSaved }) {
+  const { t, date } = useI18n();
   const [form, setForm] = useState({
     nombre: target.nombre ?? '',
     email: target.email ?? '',
@@ -223,24 +228,24 @@ function UserModal({ target, onClose, onSaved }) {
         fecha_nacimiento: form.fecha_nacimiento || null,
         pais: form.pais.trim() || null
       });
-      onSaved('Usuario actualizado.');
+      onSaved(t('admin.userUpdated'));
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo guardar el usuario.'));
+      setError(errorMessage(err, t, t('admin.userSaveError')));
       setBusy(false);
     }
   };
 
   return (
     <Modal
-      title={`Editar «${target.nombre}»`}
+      title={t('admin.editUser', { name: target.nombre })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" form="user-form" className="btn btn--primary" disabled={busy}>
-            {busy ? 'Guardando…' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </>
       }
@@ -249,7 +254,7 @@ function UserModal({ target, onClose, onSaved }) {
         {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
         <label className="field">
-          <span className="field-label">Nombre</span>
+          <span className="field-label">{t('profile.name')}</span>
           <input
             className="input"
             value={form.nombre}
@@ -260,7 +265,7 @@ function UserModal({ target, onClose, onSaved }) {
         </label>
 
         <label className="field">
-          <span className="field-label">Correo</span>
+          <span className="field-label">{t('profile.email')}</span>
           <input
             className="input"
             type="email"
@@ -272,7 +277,7 @@ function UserModal({ target, onClose, onSaved }) {
 
         <div className="form-grid">
           <label className="field">
-            <span className="field-label">Fecha de nacimiento</span>
+            <span className="field-label">{t('profile.birthDate')}</span>
             <input
               className="input"
               type="date"
@@ -282,7 +287,7 @@ function UserModal({ target, onClose, onSaved }) {
           </label>
 
           <label className="field">
-            <span className="field-label">País</span>
+            <span className="field-label">{t('profile.country')}</span>
             <input
               className="input"
               value={form.pais}
@@ -293,8 +298,7 @@ function UserModal({ target, onClose, onSaved }) {
         </div>
 
         <p className="field-hint">
-          Registrado el {formatDate(target.fecha_registro) || '—'}. El tipo de cuenta no
-          se puede modificar desde aquí.
+          {t('admin.roleReadOnly', { date: date(target.fecha_registro) || t('common.unknown') })}
         </p>
       </form>
     </Modal>

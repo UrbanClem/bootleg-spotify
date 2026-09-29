@@ -6,13 +6,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * A native `<input type="range">` cannot express Spotify's styling (bar that
  * grows on hover, handle that appears only on hover), so this is built from a
  * div plus pointer events. Keyboard support is preserved via arrow keys.
+ *
+ * `label` is required: it is the only accessible name this control has.
  */
 export default function Slider({
   value = 0,
   max = 1,
   onChange,
   green = false,
-  label = 'Volumen',
+  label,
   valueText,
   step = 0.01,
 }) {

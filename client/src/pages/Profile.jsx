@@ -4,7 +4,8 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { Alert } from '../components/Feedback';
 import { GridIcon, LogOutIcon } from '../components/icons';
-import { errorMessage, formatDate, toIsoDate } from '../utils';
+import { errorMessage, toIsoDate } from '../utils';
+import { useI18n } from '../i18n';
 
 /**
  * Account overview.
@@ -15,6 +16,7 @@ import { errorMessage, formatDate, toIsoDate } from '../utils';
  */
 export default function Profile() {
   const { user, logout, updateUser, isAdmin } = useAuth();
+  const { t, date } = useI18n();
   const navigate = useNavigate();
   const userId = user?.id_usuario;
 
@@ -82,9 +84,9 @@ export default function Profile() {
       });
       updateUser({ ...user, nombre: form.nombre, email: form.email });
       setEditing(false);
-      setNotice({ type: 'success', text: 'Perfil actualizado.' });
+      setNotice({ type: 'success', text: t('profile.saved') });
     } catch (err) {
-      setNotice({ type: 'error', text: errorMessage(err, 'No se pudo guardar el perfil.') });
+      setNotice({ type: 'error', text: errorMessage(err, t, t('profile.saveError')) });
     } finally {
       setBusy(false);
     }
@@ -117,18 +119,18 @@ export default function Profile() {
           <p className="hero-sub" style={{ marginTop: 12 }}>
             <span>{user?.email}</span>
             <span className="dot">•</span>
-            <span>{isAdmin ? 'Administrador' : 'Usuario Premium'}</span>
+            <span>{isAdmin ? t('profile.admin') : t('profile.user')}</span>
           </p>
           {user?.fecha_registro && (
             <p className="hero-note" style={{ marginTop: 6 }}>
-              Miembro desde {formatDate(user.fecha_registro)}
+              {t('profile.memberSince', { date: date(user.fecha_registro) })}
             </p>
           )}
         </div>
       </div>
 
       {notice && (
-        <div style={{ padding: '0 var(--page-pad)', marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }}>
           <Alert variant={notice.type} onDismiss={() => setNotice(null)}>
             {notice.text}
           </Alert>
@@ -138,20 +140,20 @@ export default function Profile() {
       <div className="detail-grid">
         <div className="panel">
           <div className="panel-head">
-            <h2 className="panel-title">Información de la cuenta</h2>
+            <h2 className="panel-title">{t('profile.accountInfo')}</h2>
             <button
               type="button"
               className="btn btn--outline btn--sm"
               onClick={() => setEditing((v) => !v)}
             >
-              {editing ? 'Cancelar' : 'Editar'}
+              {editing ? t('common.cancel') : t('common.edit')}
             </button>
           </div>
 
           {editing ? (
             <form className="stack" onSubmit={save}>
               <label className="field">
-                <span className="field-label">Nombre</span>
+                <span className="field-label">{t('profile.name')}</span>
                 <input
                   className="input"
                   value={form.nombre}
@@ -162,7 +164,7 @@ export default function Profile() {
               </label>
 
               <label className="field">
-                <span className="field-label">Correo</span>
+                <span className="field-label">{t('profile.email')}</span>
                 <input
                   className="input"
                   type="email"
@@ -173,7 +175,7 @@ export default function Profile() {
               </label>
 
               <label className="field">
-                <span className="field-label">Fecha de nacimiento</span>
+                <span className="field-label">{t('profile.birthDate')}</span>
                 <input
                   className="input"
                   type="date"
@@ -183,36 +185,40 @@ export default function Profile() {
               </label>
 
               <label className="field">
-                <span className="field-label">País</span>
+                <span className="field-label">{t('profile.country')}</span>
                 <input
                   className="input"
                   value={form.pais}
                   onChange={update('pais')}
-                  placeholder="España"
+                  placeholder={t('profile.countryPlaceholder')}
                   maxLength={60}
                 />
               </label>
 
               <div>
                 <button type="submit" className="btn btn--primary" disabled={busy}>
-                  {busy ? 'Guardando…' : 'Guardar cambios'}
+                  {busy ? t('common.saving') : t('profile.saveChanges')}
                 </button>
               </div>
             </form>
           ) : (
             <dl className="definition-list">
-              <dt>Nombre</dt>
+              <dt>{t('profile.name')}</dt>
               <dd>{form.nombre || '—'}</dd>
-              <dt>Correo</dt>
+              <dt>{t('profile.email')}</dt>
               <dd>{form.email || '—'}</dd>
-              <dt>Tipo de cuenta</dt>
-              <dd>{isAdmin ? 'Administrador' : 'Premium'}</dd>
-              <dt>Fecha de nacimiento</dt>
-              <dd>{form.fecha_nacimiento ? formatDate(form.fecha_nacimiento) : '—'}</dd>
-              <dt>País</dt>
+              <dt>{t('profile.accountType')}</dt>
+              <dd>{isAdmin ? t('role.admin') : t('role.user')}</dd>
+              <dt>{t('profile.birthDate')}</dt>
+              <dd>{form.fecha_nacimiento ? date(form.fecha_nacimiento) : '—'}</dd>
+              <dt>{t('profile.country')}</dt>
               <dd>{form.pais || '—'}</dd>
-              <dt>Miembro desde</dt>
-              <dd>{user?.fecha_registro ? formatDate(user.fecha_registro) : '—'}</dd>
+              <dt>{t('profile.sinceLabel')}</dt>
+              <dd>
+                {user?.fecha_registro
+                  ? t('profile.memberSince', { date: date(user.fecha_registro) })
+                  : '—'}
+              </dd>
             </dl>
           )}
         </div>
@@ -220,23 +226,23 @@ export default function Profile() {
         <div className="stack">
           <div className="stat-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
             <div className="stat">
-              <div className="stat-label">Playlists</div>
+              <div className="stat-label">{t('profile.playlists')}</div>
               <div className="stat-value">{stats ? stats.playlists : '—'}</div>
             </div>
             <div className="stat">
-              <div className="stat-label">Canciones guardadas</div>
+              <div className="stat-label">{t('profile.savedSongs')}</div>
               <div className="stat-value">{stats ? stats.canciones : '—'}</div>
             </div>
           </div>
 
           {isAdmin && (
             <Link className="btn btn--ghost btn--block" to="/admin">
-              <GridIcon size={16} /> Panel de administración
+              <GridIcon size={16} /> {t('nav.adminPanel')}
             </Link>
           )}
 
           <button type="button" className="btn btn--danger btn--block" onClick={handleLogout}>
-            <LogOutIcon size={16} /> Cerrar sesión
+            <LogOutIcon size={16} /> {t('nav.signOut')}
           </button>
         </div>
       </div>

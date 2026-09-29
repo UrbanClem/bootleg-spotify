@@ -22,7 +22,7 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Get songs error:', error);
-        res.status(500).json({ error: 'Error al obtener canciones' });
+        res.status(500).json({ error: 'Error al obtener canciones', code: 'songs_list_failed' });
     }
 });
 
@@ -41,12 +41,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
         `, [req.params.id]);
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Canción no encontrada' });
+            return res.status(404).json({ error: 'Canción no encontrada', code: 'song_not_found' });
         }
         res.json(rows[0]);
     } catch (error) {
         console.error('Get song error:', error);
-        res.status(500).json({ error: 'Error al obtener canción' });
+        res.status(500).json({ error: 'Error al obtener canción', code: 'song_fetch_failed' });
     }
 });
 
@@ -63,7 +63,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         res.status(201).json({ message: 'Canción creada exitosamente', id: result.insertId });
     } catch (error) {
         console.error('Create song error:', error);
-        res.status(500).json({ error: 'Error al crear canción' });
+        res.status(500).json({ error: 'Error al crear canción', code: 'song_create_failed' });
     }
 });
 
@@ -80,7 +80,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'Canción actualizada exitosamente' });
     } catch (error) {
         console.error('Update song error:', error);
-        res.status(500).json({ error: 'Error al actualizar canción' });
+        res.status(500).json({ error: 'Error al actualizar canción', code: 'song_update_failed' });
     }
 });
 
@@ -100,7 +100,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'Canción eliminada exitosamente' });
     } catch (error) {
         console.error('Delete song error:', error);
-        res.status(500).json({ error: 'Error al eliminar canción' });
+        res.status(500).json({ error: 'Error al eliminar canción', code: 'song_delete_failed' });
     }
 });
 

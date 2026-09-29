@@ -10,12 +10,14 @@ import { DetailHero, DetailActions, DetailStats } from '../components/DetailPage
 import { EmptyState, Spinner, Alert } from '../components/Feedback';
 import { PlaylistIcon, EditIcon, TrashIcon, PlayIcon, PlusIcon, MusicIcon, MoreIcon } from '../components/icons';
 import { heroTint, errorMessage, formatDuration } from '../utils';
+import { useI18n } from '../i18n';
 
 export default function Playlist() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { playSong, currentSong, isPlaying, togglePlay, addToQueue } = usePlayer();
+  const { t, date } = useI18n();
 
   const [playlist, setPlaylist] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,9 +34,9 @@ export default function Playlist() {
         setPlaylist(data);
         setError('');
       })
-      .catch((err) => setError(errorMessage(err, 'No se pudo cargar la playlist.')))
+      .catch((err) => setError(errorMessage(err, t, t('playlist.loadError'))))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   useEffect(load, [load]);
 
@@ -43,7 +45,7 @@ export default function Playlist() {
       await api.delete(`/playlists/${id}/songs/${songId}`);
       load();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo quitar la canción.'));
+      setError(errorMessage(err, t, t('playlist.removeSongError')));
     }
   };
 
@@ -52,7 +54,7 @@ export default function Playlist() {
       await api.delete(`/playlists/${id}`);
       navigate('/library', { replace: true });
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo eliminar la playlist.'));
+      setError(errorMessage(err, t, t('playlist.removeError')));
     }
   };
 
@@ -63,10 +65,10 @@ export default function Playlist() {
       <div className="page">
         <EmptyState
           icon={PlaylistIcon}
-          title="Playlist no encontrada"
+          title={t('playlist.notFound')}
           action={
             <button type="button" className="btn btn--primary" onClick={() => navigate('/library')}>
-              Ir a tu biblioteca
+              {t('playlist.goToLibrary')}
             </button>
           }
         >
@@ -90,18 +92,16 @@ export default function Playlist() {
   return (
     <>
       <DetailHero
-        kindLabel="Playlist"
+        kindLabel={t('kind.playlist')}
         title={playlist.nombre_playlist}
         tint={heroTint(playlist.id_playlist)}
         art={playlist.portada ? `/uploads/images/${playlist.portada}` : null}
         note={playlist.descripcion}
         meta={
           <>
-            <span className="hero-artist">{playlist.nombre_usuario ?? 'Tu cuenta'}</span>
+            <span className="hero-artist">{playlist.nombre_usuario ?? t('playlist.yourAccount')}</span>
             <span className="dot">•</span>
-            <span>
-              {songs.length} {songs.length === 1 ? 'canción' : 'canciones'}
-            </span>
+            <span>{t('plural.song', { n: songs.length })}</span>
             {totalSeconds > 0 && (
               <>
                 <span className="dot">•</span>
@@ -117,7 +117,7 @@ export default function Playlist() {
           <button
             type="button"
             className="toggle-btn"
-            aria-label="Opciones de la playlist"
+            aria-label={t('playlist.options')}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
@@ -142,7 +142,7 @@ export default function Playlist() {
                         setEditOpen(true);
                       }}
                     >
-                      <EditIcon size={16} /> Editar detalles
+                      <EditIcon size={16} /> {t('playlist.editDetails')}
                     </button>
                     <button
                       type="button"
@@ -152,7 +152,7 @@ export default function Playlist() {
                         setAddOpen(true);
                       }}
                     >
-                      <PlusIcon size={16} /> Añadir canciones
+                      <PlusIcon size={16} /> {t('playlist.addSongs')}
                     </button>
                     <hr className="menu-divider" />
                     <button
@@ -160,13 +160,11 @@ export default function Playlist() {
                       className="menu-item menu-item--danger"
                       onClick={removePlaylist}
                     >
-                      <TrashIcon size={16} /> Eliminar playlist
+                      <TrashIcon size={16} /> {t('playlist.deletePlaylist')}
                     </button>
                   </>
                 )}
-                {!isOwner && (
-                  <p className="sidebar-empty">Solo el propietario puede editarla.</p>
-                )}
+                {!isOwner && <p className="sidebar-empty">{t('playlist.ownerOnly')}</p>}
               </div>
             </>
           )}
@@ -181,10 +179,11 @@ export default function Playlist() {
 
       <DetailStats>
         <span>
-          <strong>{songs.length}</strong> {songs.length === 1 ? 'canción' : 'canciones'}
+          <strong>{songs.length}</strong>{' '}
+          {songs.length === 1 ? t('label.song') : t('label.songs')}
         </span>
         {playlist.fecha_creacion && (
-          <span>Creada el {new Date(playlist.fecha_creacion).toLocaleDateString('es-ES')}</span>
+          <span>{t('playlist.createdOn', { date: date(playlist.fecha_creacion) })}</span>
         )}
       </DetailStats>
 
@@ -192,29 +191,29 @@ export default function Playlist() {
         {songs.length === 0 ? (
           <EmptyState
             icon={MusicIcon}
-            title="Esta playlist está vacía"
+            title={t('playlist.emptyTitle')}
             action={
               isOwner ? (
                 <button type="button" className="btn btn--primary" onClick={() => setAddOpen(true)}>
-                  Añadir canciones
+                  {t('playlist.addSongs')}
                 </button>
               ) : null
             }
           >
-            Usa el botón «Añadir canciones» para empezar a llenarla.
+            {t('playlist.emptyText')}
           </EmptyState>
         ) : (
           <>
             <div className="row" style={{ marginBottom: 16 }}>
               <button type="button" className="btn btn--outline" onClick={() => playSong(songs[0], songs)}>
-                <PlayIcon size={16} /> Reproducir
+                <PlayIcon size={16} /> {t('playlist.play')}
               </button>
               <button
                 type="button"
                 className="btn btn--ghost"
                 onClick={() => songs.forEach(addToQueue)}
               >
-                Añadir a la cola
+                {t('playlist.addToQueue')}
               </button>
             </div>
 
@@ -237,7 +236,7 @@ export default function Playlist() {
                                 removeSong(s.id_cancion);
                               }}
                             >
-                              <TrashIcon size={16} /> Quitar de la playlist
+                              <TrashIcon size={16} /> {t('playlist.removeFromPlaylist')}
                             </button>
                           </>
                         )
@@ -277,6 +276,7 @@ export default function Playlist() {
 }
 
 function EditPlaylistModal({ playlist, onClose, onSaved }) {
+  const { t } = useI18n();
   const [name, setName] = useState(playlist.nombre_playlist);
   const [description, setDescription] = useState(playlist.descripcion ?? '');
   const [isPrivate, setIsPrivate] = useState(Boolean(playlist.privada));
@@ -286,7 +286,7 @@ function EditPlaylistModal({ playlist, onClose, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('El nombre no puede estar vacío.');
+      setError(t('playlist.nameEmpty'));
       return;
     }
     setBusy(true);
@@ -298,22 +298,22 @@ function EditPlaylistModal({ playlist, onClose, onSaved }) {
       });
       onSaved();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo guardar.'));
+      setError(errorMessage(err, t, t('playlist.saveFailed')));
       setBusy(false);
     }
   };
 
   return (
     <Modal
-      title="Editar detalles de la playlist"
+      title={t('playlist.editModalTitle')}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" form="edit-playlist" className="btn btn--primary" disabled={busy}>
-            {busy ? 'Guardando…' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </>
       }
@@ -322,7 +322,7 @@ function EditPlaylistModal({ playlist, onClose, onSaved }) {
         {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
         <label className="field">
-          <span className="field-label">Nombre</span>
+          <span className="field-label">{t('createPlaylist.nameLabel')}</span>
           <input
             className="input"
             value={name}
@@ -332,7 +332,7 @@ function EditPlaylistModal({ playlist, onClose, onSaved }) {
         </label>
 
         <label className="field">
-          <span className="field-label">Descripción</span>
+          <span className="field-label">{t('createPlaylist.descriptionLabel')}</span>
           <textarea
             className="input"
             value={description}
@@ -348,7 +348,7 @@ function EditPlaylistModal({ playlist, onClose, onSaved }) {
             onChange={(e) => setIsPrivate(e.target.checked)}
           />
           <span className="switch-track" />
-          <span>Privada</span>
+          <span>{t('createPlaylist.private')}</span>
         </label>
       </form>
     </Modal>
@@ -356,6 +356,7 @@ function EditPlaylistModal({ playlist, onClose, onSaved }) {
 }
 
 function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
+  const { t } = useI18n();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -389,13 +390,13 @@ function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
       await api.post(`/playlists/${playlistId}/songs`, { id_cancion: song.id_cancion });
       onAdded();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo añadir la canción.'));
+      setError(errorMessage(err, t, t('playlist.addSongFailed')));
       setBusy(false);
     }
   };
 
   return (
-    <Modal title="Añadir canciones" onClose={onClose} wide>
+    <Modal title={t('playlist.addSongsModal')} onClose={onClose} wide>
       {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
       <div className="input-group">
@@ -403,8 +404,8 @@ function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
           className="input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Filtrar por título o artista"
-          aria-label="Filtrar canciones"
+          placeholder={t('playlist.filterPlaceholder')}
+          aria-label={t('playlist.filterLabel')}
         />
       </div>
 
@@ -412,7 +413,7 @@ function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
         <Spinner center />
       ) : filtered.length === 0 ? (
         <p className="text-subdued" style={{ fontSize: 14 }}>
-          No hay canciones que añadir.
+          {t('playlist.noSongsToAdd')}
         </p>
       ) : (
         <div className="track-list" style={{ maxHeight: 360, overflowY: 'auto' }}>
@@ -435,7 +436,7 @@ function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
                 disabled={busy}
                 onClick={() => add(song)}
               >
-                Añadir
+                {t('common.add')}
               </button>
             </div>
           ))}

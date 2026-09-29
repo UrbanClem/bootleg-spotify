@@ -25,7 +25,7 @@ router.get('/songs', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Search songs error:', error);
-        res.status(500).json({ error: 'Error en la búsqueda' });
+        res.status(500).json({ error: 'Error en la búsqueda', code: 'search_failed' });
     }
 });
 
@@ -50,7 +50,7 @@ router.get('/albums', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Search albums error:', error);
-        res.status(500).json({ error: 'Error en la búsqueda' });
+        res.status(500).json({ error: 'Error en la búsqueda', code: 'search_failed' });
     }
 });
 
@@ -72,7 +72,7 @@ router.get('/artists', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Search artists error:', error);
-        res.status(500).json({ error: 'Error en la búsqueda' });
+        res.status(500).json({ error: 'Error en la búsqueda', code: 'search_failed' });
     }
 });
 

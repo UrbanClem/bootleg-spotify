@@ -5,15 +5,17 @@ import MediaCard from '../components/MediaCard';
 import { EmptyState, Spinner, Alert } from '../components/Feedback';
 import { PlaylistIcon, SearchIcon, SortIcon } from '../components/icons';
 import { errorMessage } from '../utils';
+import { useI18n } from '../i18n';
 
 const SORTS = [
-  { id: 'recientes', label: 'Añadidas recientemente' },
-  { id: 'nombre', label: 'Nombre' },
-  { id: 'canciones', label: 'Número de canciones' }
+  { id: 'recientes', labelKey: 'library.sortRecent' },
+  { id: 'nombre', labelKey: 'library.sortName' },
+  { id: 'canciones', labelKey: 'library.sortSongs' }
 ];
 
 /** The user's own playlists, with search and sorting. */
 export default function Library() {
+  const { t, locale } = useI18n();
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,7 +32,7 @@ export default function Library() {
         setPlaylists(data);
         setError('');
       })
-      .catch((err) => alive && setError(errorMessage(err, 'No se pudo cargar tu biblioteca.')))
+      .catch((err) => alive && setError(errorMessage(err, t, t('library.loadError'))))
       .finally(() => alive && setLoading(false));
 
     return () => {
@@ -45,17 +47,18 @@ export default function Library() {
       : [...playlists];
 
     if (sort === 'nombre') {
-      filtered.sort((a, b) => a.nombre_playlist.localeCompare(b.nombre_playlist, 'es'));
+      // Sort in the active UI language so accented titles group together.
+      filtered.sort((a, b) => a.nombre_playlist.localeCompare(b.nombre_playlist, locale));
     } else if (sort === 'canciones') {
       filtered.sort((a, b) => (b.total_canciones ?? 0) - (a.total_canciones ?? 0));
     }
     return filtered;
-  }, [playlists, query, sort]);
+  }, [playlists, query, sort, locale]);
 
   return (
     <div className="page">
       <div className="greeting">
-        <h1 className="greeting-title">Tu biblioteca</h1>
+        <h1 className="greeting-title">{t('library.title')}</h1>
       </div>
 
       <div className="filter-bar">
@@ -65,8 +68,8 @@ export default function Library() {
             className="input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filtra por nombre"
-            aria-label="Filtrar playlists"
+            placeholder={t('library.filterPlaceholder')}
+            aria-label={t('library.filterLabel')}
           />
         </div>
 
@@ -74,17 +77,17 @@ export default function Library() {
           className="filter-select"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          aria-label="Ordenar por"
+          aria-label={t('library.sortBy')}
         >
           {SORTS.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label}
+              {t(s.labelKey)}
             </option>
           ))}
         </select>
 
         <span className="chip" style={{ marginLeft: 'auto' }}>
-          <SortIcon size={14} /> {visible.length} {visible.length === 1 ? 'playlist' : 'playlists'}
+          <SortIcon size={14} /> {t('library.count', { n: visible.length })}
         </span>
       </div>
 
@@ -99,22 +102,22 @@ export default function Library() {
       ) : playlists.length === 0 ? (
         <EmptyState
           icon={PlaylistIcon}
-          title="Todavía no tienes playlists"
+          title={t('library.emptyTitle')}
           action={
             <button
               type="button"
               className="btn btn--primary"
               onClick={() => navigate('/search')}
             >
-              Explorar música
+              {t('library.browseMusic')}
             </button>
           }
         >
-          Usa «Crear playlist» en la barra lateral para empezar una.
+          {t('library.emptyText')}
         </EmptyState>
       ) : visible.length === 0 ? (
-        <EmptyState icon={SearchIcon} title="Sin resultados">
-          Ninguna playlist coincide con «{query}».
+        <EmptyState icon={SearchIcon} title={t('library.noResults')}>
+          {t('library.noResultsText', { query })}
         </EmptyState>
       ) : (
         <div className="card-grid">
@@ -125,8 +128,8 @@ export default function Library() {
               kind="playlist"
               subtitle={
                 p.total_canciones
-                  ? `${p.total_canciones} ${p.total_canciones === 1 ? 'canción' : 'canciones'}`
-                  : 'Vacía'
+                  ? t('plural.song', { n: p.total_canciones })
+                  : t('library.emptyPlaylist')
               }
               onPlay
             />

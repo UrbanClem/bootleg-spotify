@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../i18n';
+import LanguageSwitch from './LanguageSwitch';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,7 +14,8 @@ import {
 
 export default function TopBar({ solid, onOpenDrawer }) {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -35,15 +38,13 @@ export default function TopBar({ solid, onOpenDrawer }) {
     navigate('/login', { replace: true });
   };
 
-  const isAdmin = user?.tipo_cuenta === 'Admin';
-
   return (
     <header className={`topbar${solid ? ' topbar--solid' : ''}`}>
       <button
         type="button"
         className="icon-btn topbar-burger"
         onClick={onOpenDrawer}
-        aria-label="Abrir menú"
+        aria-label={t('nav.openMenu')}
       >
         <MenuIcon size={20} />
       </button>
@@ -53,7 +54,7 @@ export default function TopBar({ solid, onOpenDrawer }) {
           type="button"
           className="icon-btn"
           onClick={() => navigate(-1)}
-          aria-label="Atrás"
+          aria-label={t('nav.back')}
         >
           <ChevronLeft size={20} />
         </button>
@@ -61,7 +62,7 @@ export default function TopBar({ solid, onOpenDrawer }) {
           type="button"
           className="icon-btn"
           onClick={() => navigate(1)}
-          aria-label="Adelante"
+          aria-label={t('nav.forward')}
         >
           <ChevronRight size={20} />
         </button>
@@ -70,8 +71,10 @@ export default function TopBar({ solid, onOpenDrawer }) {
       <div className="topbar-spacer" />
 
       <div className="topbar-actions">
+        <LanguageSwitch compact />
+
         <span className="chip chip--outline topbar-chip">
-          {isAdmin ? 'Admin' : 'Premium'}
+          {isAdmin ? t('role.admin') : t('role.user')}
         </span>
 
         <div style={{ position: 'relative' }} ref={menuRef}>
@@ -81,12 +84,12 @@ export default function TopBar({ solid, onOpenDrawer }) {
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            aria-label="Menú de cuenta"
+            aria-label={t('nav.accountMenu')}
           >
             <span className="account-avatar">
               {user?.nombre ? user.nombre.trim().charAt(0).toUpperCase() : <UserIcon size={16} />}
             </span>
-            <span className="account-name">{user?.nombre ?? 'Invitado'}</span>
+            <span className="account-name">{user?.nombre ?? t('nav.guest')}</span>
             <ChevronRight
               size={16}
               style={{ transform: 'rotate(90deg)', opacity: 0.7 }}
@@ -100,7 +103,7 @@ export default function TopBar({ solid, onOpenDrawer }) {
                   {user?.nombre ? user.nombre.trim().charAt(0).toUpperCase() : <UserIcon size={18} />}
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <div className="menu-account-name">{user?.nombre ?? 'Invitado'}</div>
+                  <div className="menu-account-name">{user?.nombre ?? t('nav.guest')}</div>
                   <div className="menu-account-mail">{user?.email}</div>
                 </div>
               </div>
@@ -108,12 +111,12 @@ export default function TopBar({ solid, onOpenDrawer }) {
               <hr className="menu-divider" />
 
               <Link className="menu-item" to="/profile" onClick={() => setMenuOpen(false)}>
-                <UserIcon size={16} /> Cuenta
+                <UserIcon size={16} /> {t('nav.account')}
               </Link>
 
               {isAdmin && (
                 <Link className="menu-item" to="/admin" onClick={() => setMenuOpen(false)}>
-                  <GridIcon size={16} /> Panel de administración
+                  <GridIcon size={16} /> {t('nav.adminPanel')}
                 </Link>
               )}
 
@@ -124,7 +127,7 @@ export default function TopBar({ solid, onOpenDrawer }) {
                 className="menu-item menu-item--danger"
                 onClick={handleLogout}
               >
-                <LogOutIcon size={16} /> Cerrar sesión
+                <LogOutIcon size={16} /> {t('nav.signOut')}
               </button>
             </div>
           )}

@@ -14,8 +14,13 @@ import {
   MusicIcon,
 } from './icons';
 import { coverStyle } from '../utils';
+import { useI18n } from '../i18n';
 
-/** Shortcuts into the genre catalogue; mirrors Spotify's browse rows. */
+/**
+ * Shortcuts into the genre catalogue; mirrors Spotify's browse rows.
+ * These are `album.genero` values stored in the database, not UI chrome, so
+ * they are deliberately left untranslated.
+ */
 const GENRES = [
   'Synth-pop',
   'Indie tropical',
@@ -28,6 +33,7 @@ const GENRES = [
 export default function Sidebar({ onCreatePlaylist }) {
   const [playlists, setPlaylists] = useState([]);
   const { user } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,7 +49,7 @@ export default function Sidebar({ onCreatePlaylist }) {
   }, [location.pathname]);
 
   return (
-    <nav className="sidebar" aria-label="Navegación principal">
+    <nav className="sidebar" aria-label={t('nav.mainNavigation')}>
       <div className="sidebar-logo">
         <Logo size={28} />
         <span>Bootleg</span>
@@ -57,14 +63,14 @@ export default function Sidebar({ onCreatePlaylist }) {
             className={({ isActive }) => `nav-pill${isActive ? ' is-active' : ''}`}
           >
             <HomeIcon size={24} />
-            <span>Inicio</span>
+            <span>{t('nav.home')}</span>
           </NavLink>
           <NavLink
             to="/search"
             className={({ isActive }) => `nav-pill${isActive ? ' is-active' : ''}`}
           >
             <SearchIcon size={24} />
-            <span>Buscar</span>
+            <span>{t('nav.search')}</span>
           </NavLink>
         </div>
 
@@ -78,27 +84,25 @@ export default function Sidebar({ onCreatePlaylist }) {
               onClick={onCreatePlaylist}
             >
               <PlusIcon size={20} />
-              <span>Crear playlist</span>
+              <span>{t('nav.createPlaylist')}</span>
             </button>
             <button
               type="button"
               className="toggle-btn"
-              aria-label="Ver toda tu biblioteca"
-              title="Ver toda tu biblioteca"
+              aria-label={t('nav.seeWholeLibrary')}
+              title={t('nav.seeWholeLibrary')}
               onClick={() => navigate('/library')}
             >
               <ChevronDown size={18} />
             </button>
           </div>
 
-          <div className="sidebar-section-title">Tu biblioteca</div>
+          <div className="sidebar-section-title">{t('nav.library')}</div>
 
           <div className="sidebar-playlists">
             {playlists.length === 0 && (
               <p className="sidebar-empty">
-                {user
-                  ? 'Todavía no tienes playlists.'
-                  : 'Inicia sesión para ver tu biblioteca.'}
+                {user ? t('library.sidebarEmpty') : t('library.sidebarSignedOut')}
               </p>
             )}
 

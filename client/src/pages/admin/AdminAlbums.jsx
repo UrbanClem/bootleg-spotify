@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import { Alert, EmptyState, Spinner } from '../../components/Feedback';
 import { PlusIcon, EditIcon, TrashIcon, SearchIcon, AlbumIcon } from '../../components/icons';
 import { errorMessage, toIsoDate } from '../../utils';
+import { useI18n } from '../../i18n';
 
 const EMPTY = {
   titulo: '',
@@ -15,6 +16,7 @@ const EMPTY = {
 
 /** Full CRUD over the `album` table, including cover upload. */
 export default function AdminAlbums() {
+  const { t, n } = useI18n();
   const [albums, setAlbums] = useState([]);
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function AdminAlbums() {
       setArtists(ar.data);
       setError('');
     } catch (err) {
-      setError(errorMessage(err, 'No se pudieron cargar los álbumes.'));
+      setError(errorMessage(err, t, t('admin.loadAlbumsError')));
     } finally {
       setLoading(false);
     }
@@ -53,13 +55,13 @@ export default function AdminAlbums() {
   }, [albums, query]);
 
   const remove = async (album) => {
-    if (!window.confirm(`¿Eliminar el álbum «${album.titulo}»?`)) return;
+    if (!window.confirm(t('admin.confirmDeleteAlbum', { name: album.titulo }))) return;
     try {
       await api.delete(`/albums/${album.id_album}`);
-      setNotice({ type: 'success', text: 'Álbum eliminado.' });
+      setNotice({ type: 'success', text: t('admin.albumDeleted') });
       load();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo eliminar.'));
+      setError(errorMessage(err, t, t('admin.albumDeleteError')));
     }
   };
 
@@ -69,9 +71,13 @@ export default function AdminAlbums() {
     <>
       <div className="admin-head">
         <div>
-          <h2 className="section-title">Álbumes ({albums.length})</h2>
+          <h2 className="section-title">
+            {t('admin.albums')} ({n(albums.length)})
+          </h2>
           <p className="text-subdued" style={{ fontSize: 14 }}>
-            {albums.filter((a) => a.portada).length} con portada
+            {t('admin.withCoverCount', {
+              n: n(albums.filter((a) => a.portada).length)
+            })}
           </p>
         </div>
         <div className="row">
@@ -81,8 +87,8 @@ export default function AdminAlbums() {
               className="input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filtrar álbumes"
-              aria-label="Filtrar álbumes"
+              placeholder={t('admin.filterAlbums')}
+              aria-label={t('admin.filterAlbums')}
             />
           </div>
           <button
@@ -90,7 +96,7 @@ export default function AdminAlbums() {
             className="btn btn--primary"
             onClick={() => setEditing({ ...EMPTY })}
           >
-            <PlusIcon size={16} /> Nuevo álbum
+            <PlusIcon size={16} /> {t('admin.newAlbum')}
           </button>
         </div>
       </div>
@@ -110,19 +116,19 @@ export default function AdminAlbums() {
 
       <div style={{ marginTop: 24 }}>
         {visible.length === 0 ? (
-          <EmptyState icon={AlbumIcon} title="Sin álbumes" />
+          <EmptyState icon={AlbumIcon} title={t('admin.noAlbums')} />
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
                   <th className="num">#</th>
-                  <th>Título</th>
-                  <th>Artista</th>
-                  <th>Género</th>
-                  <th>Fecha</th>
-                  <th className="num">Canciones</th>
-                  <th>Portada</th>
+                  <th>{t('field.title')}</th>
+                  <th>{t('field.artist')}</th>
+                  <th>{t('field.genre')}</th>
+                  <th>{t('admin.columnDate')}</th>
+                  <th className="num">{t('admin.columnSongs')}</th>
+                  <th>{t('admin.columnCover')}</th>
                   <th />
                 </tr>
               </thead>
@@ -131,17 +137,21 @@ export default function AdminAlbums() {
                   <tr key={album.id_album}>
                     <td className="num">{album.id_album}</td>
                     <td className="cell-title">{album.titulo}</td>
-                    <td className="text-subdued">{album.nombre_artista ?? '—'}</td>
-                    <td className="text-subdued">{album.genero ?? '—'}</td>
                     <td className="text-subdued">
-                      {album.fecha_lanzamiento ? album.fecha_lanzamiento.slice(0, 10) : '—'}
+                      {album.nombre_artista ?? t('common.unknown')}
                     </td>
-                    <td className="num">{album.total_canciones ?? 0}</td>
+                    <td className="text-subdued">{album.genero ?? t('common.unknown')}</td>
+                    <td className="text-subdued">
+                      {album.fecha_lanzamiento
+                        ? album.fecha_lanzamiento.slice(0, 10)
+                        : t('common.unknown')}
+                    </td>
+                    <td className="num">{n(album.total_canciones ?? 0)}</td>
                     <td>
                       {album.portada ? (
-                        <span className="tag tag--green">Sí</span>
+                        <span className="tag tag--green">{t('common.yes')}</span>
                       ) : (
-                        <span className="tag">No</span>
+                        <span className="tag">{t('common.no')}</span>
                       )}
                     </td>
                     <td>
@@ -150,7 +160,7 @@ export default function AdminAlbums() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => setEditing(album)}
-                          aria-label={`Editar ${album.titulo}`}
+                          aria-label={t('admin.editAction', { name: album.titulo })}
                         >
                           <EditIcon size={16} />
                         </button>
@@ -158,7 +168,7 @@ export default function AdminAlbums() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => remove(album)}
-                          aria-label={`Eliminar ${album.titulo}`}
+                          aria-label={t('admin.deleteAction', { name: album.titulo })}
                         >
                           <TrashIcon size={16} />
                         </button>
@@ -189,6 +199,7 @@ export default function AdminAlbums() {
 }
 
 function AlbumModal({ album, artists, onClose, onSaved }) {
+  const { t } = useI18n();
   const isNew = !album.id_album;
   const [form, setForm] = useState({
     titulo: album.titulo ?? '',
@@ -209,11 +220,11 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.titulo.trim()) {
-      setError('El título es obligatorio.');
+      setError(t('field.titleRequired'));
       return;
     }
     if (!form.id_artista) {
-      setError('Selecciona un artista.');
+      setError(t('field.selectArtist'));
       return;
     }
 
@@ -239,28 +250,28 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
 
       if (isNew) {
         await api.post('/albums', payload);
-        onSaved('Álbum creado.');
+        onSaved(t('admin.albumCreated'));
       } else {
         await api.put(`/albums/${album.id_album}`, payload);
-        onSaved('Álbum actualizado.');
+        onSaved(t('admin.albumUpdated'));
       }
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo guardar el álbum.'));
+      setError(errorMessage(err, t, t('admin.albumSaveError')));
       setBusy(false);
     }
   };
 
   return (
     <Modal
-      title={isNew ? 'Nuevo álbum' : `Editar «${album.titulo}»`}
+      title={isNew ? t('admin.newAlbum') : t('admin.editAlbum', { name: album.titulo })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" form="album-form" className="btn btn--primary" disabled={busy}>
-            {busy ? 'Guardando…' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </>
       }
@@ -269,7 +280,7 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
         {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
         <label className="field">
-          <span className="field-label">Título</span>
+          <span className="field-label">{t('field.title')}</span>
           <input
             className="input"
             value={form.titulo}
@@ -281,14 +292,14 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
 
         <div className="form-grid">
           <label className="field">
-            <span className="field-label">Artista</span>
+            <span className="field-label">{t('field.artist')}</span>
             <select
               className="input"
               value={form.id_artista}
               onChange={update('id_artista')}
               required
             >
-              <option value="">Selecciona…</option>
+              <option value="">{t('field.select')}</option>
               {artists.map((a) => (
                 <option key={a.id_artista} value={a.id_artista}>
                   {a.nombre_artista}
@@ -298,18 +309,18 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
           </label>
 
           <label className="field">
-            <span className="field-label">Género</span>
+            <span className="field-label">{t('field.genre')}</span>
             <input
               className="input"
               value={form.genero}
               onChange={update('genero')}
               maxLength={100}
-              placeholder="Indie rock"
+              placeholder={t('field.genrePlaceholder')}
             />
           </label>
 
           <label className="field">
-            <span className="field-label">Fecha de lanzamiento</span>
+            <span className="field-label">{t('field.releaseDate')}</span>
             <input
               className="input"
               type="date"
@@ -320,11 +331,11 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
         </div>
 
         <div className="field">
-          <span className="field-label">Portada</span>
+          <span className="field-label">{t('field.cover')}</span>
           {album.portada && !coverFile && (
             <img
               src={`/uploads/images/${album.portada}`}
-              alt="Portada actual"
+              alt={t('field.currentCover')}
               style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 4 }}
             />
           )}
@@ -335,7 +346,7 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
             onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
             style={{ paddingTop: 8 }}
           />
-          <span className="field-hint">JPG, PNG, GIF o WEBP. Máximo 10 MB.</span>
+          <span className="field-hint">{t('field.imageHint')}</span>
         </div>
       </form>
     </Modal>

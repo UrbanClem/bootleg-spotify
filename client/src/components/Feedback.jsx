@@ -1,6 +1,8 @@
 import { WarningIcon, CheckIcon, InfoIcon } from './icons';
+import { useI18n } from '../i18n';
 
 export function Alert({ variant = 'error', children, onDismiss }) {
+  const { t } = useI18n();
   const Icon =
     variant === 'success' ? CheckIcon : variant === 'info' ? InfoIcon : WarningIcon;
   return (
@@ -13,7 +15,7 @@ export function Alert({ variant = 'error', children, onDismiss }) {
           className="toggle-btn"
           style={{ width: 24, height: 24 }}
           onClick={onDismiss}
-          aria-label="Cerrar aviso"
+          aria-label={t('feedback.closeAlert')}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6 6 18" />
@@ -25,10 +27,12 @@ export function Alert({ variant = 'error', children, onDismiss }) {
 }
 
 export function Spinner({ small = false, center = false }) {
+  const { t } = useI18n();
+
   if (center) {
     return (
       <div className="spinner spinner--center">
-        <span className="spinner" role="status" aria-label="Cargando" />
+        <span className="spinner" role="status" aria-label={t('feedback.loading')} />
       </div>
     );
   }
@@ -36,7 +40,7 @@ export function Spinner({ small = false, center = false }) {
     <span
       className={`spinner${small ? ' spinner--sm' : ''}`}
       role="status"
-      aria-label="Cargando"
+      aria-label={t('feedback.loading')}
     />
   );
 }

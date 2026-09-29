@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import { Alert, EmptyState, Spinner } from '../../components/Feedback';
 import { PlusIcon, EditIcon, TrashIcon, SearchIcon, ArtistIcon } from '../../components/icons';
 import { errorMessage, toIsoDate } from '../../utils';
+import { useI18n } from '../../i18n';
 
 const EMPTY = {
   nombre_artista: '',
@@ -16,6 +17,7 @@ const EMPTY = {
 
 /** Full CRUD over the `artista` table, including profile photo upload. */
 export default function AdminArtists() {
+  const { t, n } = useI18n();
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,7 +32,7 @@ export default function AdminArtists() {
       setArtists(data);
       setError('');
     } catch (err) {
-      setError(errorMessage(err, 'No se pudieron cargar los artistas.'));
+      setError(errorMessage(err, t, t('admin.loadArtistsError')));
     } finally {
       setLoading(false);
     }
@@ -51,13 +53,13 @@ export default function AdminArtists() {
   }, [artists, query]);
 
   const remove = async (artist) => {
-    if (!window.confirm(`¿Eliminar al artista «${artist.nombre_artista}»?`)) return;
+    if (!window.confirm(t('admin.confirmDeleteArtist', { name: artist.nombre_artista }))) return;
     try {
       await api.delete(`/artists/${artist.id_artista}`);
-      setNotice({ type: 'success', text: 'Artista eliminado.' });
+      setNotice({ type: 'success', text: t('admin.artistDeleted') });
       load();
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo eliminar.'));
+      setError(errorMessage(err, t, t('admin.artistDeleteError')));
     }
   };
 
@@ -67,9 +69,13 @@ export default function AdminArtists() {
     <>
       <div className="admin-head">
         <div>
-          <h2 className="section-title">Artistas ({artists.length})</h2>
+          <h2 className="section-title">
+            {t('admin.artists')} ({n(artists.length)})
+          </h2>
           <p className="text-subdued" style={{ fontSize: 14 }}>
-            {artists.filter((a) => a.verificado).length} verificados
+            {t('admin.verifiedCount', {
+              n: n(artists.filter((a) => a.verificado).length)
+            })}
           </p>
         </div>
         <div className="row">
@@ -79,8 +85,8 @@ export default function AdminArtists() {
               className="input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filtrar artistas"
-              aria-label="Filtrar artistas"
+              placeholder={t('admin.filterArtists')}
+              aria-label={t('admin.filterArtists')}
             />
           </div>
           <button
@@ -88,7 +94,7 @@ export default function AdminArtists() {
             className="btn btn--primary"
             onClick={() => setEditing({ ...EMPTY })}
           >
-            <PlusIcon size={16} /> Nuevo artista
+            <PlusIcon size={16} /> {t('admin.newArtist')}
           </button>
         </div>
       </div>
@@ -108,18 +114,18 @@ export default function AdminArtists() {
 
       <div style={{ marginTop: 24 }}>
         {visible.length === 0 ? (
-          <EmptyState icon={ArtistIcon} title="Sin artistas" />
+          <EmptyState icon={ArtistIcon} title={t('admin.noArtists')} />
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
                   <th className="num">#</th>
-                  <th>Nombre</th>
-                  <th className="num">Canciones</th>
-                  <th className="num">Seguidores</th>
-                  <th>Verificado</th>
-                  <th>Foto</th>
+                  <th>{t('field.name')}</th>
+                  <th className="num">{t('admin.columnSongs')}</th>
+                  <th className="num">{t('admin.columnFollowers')}</th>
+                  <th>{t('admin.columnVerified')}</th>
+                  <th>{t('admin.columnPhoto')}</th>
                   <th />
                 </tr>
               </thead>
@@ -128,20 +134,20 @@ export default function AdminArtists() {
                   <tr key={artist.id_artista}>
                     <td className="num">{artist.id_artista}</td>
                     <td className="cell-title">{artist.nombre_artista}</td>
-                    <td className="num">{artist.total_canciones ?? 0}</td>
-                    <td className="num">{(artist.seguidores ?? 0).toLocaleString('es-ES')}</td>
+                    <td className="num">{n(artist.total_canciones ?? 0)}</td>
+                    <td className="num">{n(artist.seguidores ?? 0)}</td>
                     <td>
                       {artist.verificado ? (
-                        <span className="tag tag--green">Sí</span>
+                        <span className="tag tag--green">{t('common.yes')}</span>
                       ) : (
-                        <span className="tag">No</span>
+                        <span className="tag">{t('common.no')}</span>
                       )}
                     </td>
                     <td>
                       {artist.foto_perfil ? (
-                        <span className="tag tag--green">Sí</span>
+                        <span className="tag tag--green">{t('common.yes')}</span>
                       ) : (
-                        <span className="tag">No</span>
+                        <span className="tag">{t('common.no')}</span>
                       )}
                     </td>
                     <td>
@@ -150,7 +156,7 @@ export default function AdminArtists() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => setEditing(artist)}
-                          aria-label={`Editar ${artist.nombre_artista}`}
+                          aria-label={t('admin.editAction', { name: artist.nombre_artista })}
                         >
                           <EditIcon size={16} />
                         </button>
@@ -158,7 +164,7 @@ export default function AdminArtists() {
                           type="button"
                           className="toggle-btn"
                           onClick={() => remove(artist)}
-                          aria-label={`Eliminar ${artist.nombre_artista}`}
+                          aria-label={t('admin.deleteAction', { name: artist.nombre_artista })}
                         >
                           <TrashIcon size={16} />
                         </button>
@@ -188,6 +194,7 @@ export default function AdminArtists() {
 }
 
 function ArtistModal({ artist, onClose, onSaved }) {
+  const { t } = useI18n();
   const isNew = !artist.id_artista;
   const [form, setForm] = useState({
     nombre_artista: artist.nombre_artista ?? '',
@@ -210,7 +217,7 @@ function ArtistModal({ artist, onClose, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.nombre_artista.trim()) {
-      setError('El nombre es obligatorio.');
+      setError(t('field.nameRequired'));
       return;
     }
 
@@ -237,28 +244,28 @@ function ArtistModal({ artist, onClose, onSaved }) {
 
       if (isNew) {
         await api.post('/artists', payload);
-        onSaved('Artista creado.');
+        onSaved(t('admin.artistCreated'));
       } else {
         await api.put(`/artists/${artist.id_artista}`, payload);
-        onSaved('Artista actualizado.');
+        onSaved(t('admin.artistUpdated'));
       }
     } catch (err) {
-      setError(errorMessage(err, 'No se pudo guardar el artista.'));
+      setError(errorMessage(err, t, t('admin.artistSaveError')));
       setBusy(false);
     }
   };
 
   return (
     <Modal
-      title={isNew ? 'Nuevo artista' : `Editar «${artist.nombre_artista}»`}
+      title={isNew ? t('admin.newArtist') : t('admin.editArtist', { name: artist.nombre_artista })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" form="artist-form" className="btn btn--primary" disabled={busy}>
-            {busy ? 'Guardando…' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </>
       }
@@ -267,7 +274,7 @@ function ArtistModal({ artist, onClose, onSaved }) {
         {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
         <label className="field">
-          <span className="field-label">Nombre artístico</span>
+          <span className="field-label">{t('field.stageName')}</span>
           <input
             className="input"
             value={form.nombre_artista}
@@ -278,7 +285,7 @@ function ArtistModal({ artist, onClose, onSaved }) {
         </label>
 
         <label className="field">
-          <span className="field-label">Biografía</span>
+          <span className="field-label">{t('field.description')}</span>
           <textarea
             className="input"
             value={form.biografia}
@@ -289,7 +296,7 @@ function ArtistModal({ artist, onClose, onSaved }) {
 
         <div className="form-grid">
           <label className="field">
-            <span className="field-label">Seguidores</span>
+            <span className="field-label">{t('admin.columnFollowers')}</span>
             <input
               className="input"
               type="number"
@@ -300,7 +307,7 @@ function ArtistModal({ artist, onClose, onSaved }) {
           </label>
 
           <label className="field">
-            <span className="field-label">Fecha de registro</span>
+            <span className="field-label">{t('field.signUpDate')}</span>
             <input
               className="input"
               type="date"
@@ -313,15 +320,15 @@ function ArtistModal({ artist, onClose, onSaved }) {
         <label className="switch">
           <input type="checkbox" checked={form.verificado} onChange={update('verificado')} />
           <span className="switch-track" />
-          <span>Artista verificado</span>
+          <span>{t('field.verifiedArtist')}</span>
         </label>
 
         <div className="field">
-          <span className="field-label">Foto de perfil</span>
+          <span className="field-label">{t('field.photo')}</span>
           {artist.foto_perfil && !photoFile && (
             <img
               src={`/uploads/artists/${artist.foto_perfil}`}
-              alt="Foto actual"
+              alt={t('field.currentPhoto')}
               style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%' }}
             />
           )}

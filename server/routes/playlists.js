@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Get playlists error:', error);
-        res.status(500).json({ error: 'Error al obtener playlists' });
+        res.status(500).json({ error: 'Error al obtener playlists', code: 'playlists_list_failed' });
     }
 });
 
@@ -31,7 +31,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         );
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Playlist no encontrada' });
+            return res.status(404).json({ error: 'Playlist no encontrada', code: 'playlist_not_found' });
         }
 
         const [songs] = await pool.query(`
@@ -48,7 +48,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         res.json({ ...rows[0], canciones: songs });
     } catch (error) {
         console.error('Get playlist error:', error);
-        res.status(500).json({ error: 'Error al obtener playlist' });
+        res.status(500).json({ error: 'Error al obtener playlist', code: 'playlist_fetch_failed' });
     }
 });
 
@@ -65,7 +65,7 @@ router.post('/', authenticateToken, async (req, res) => {
         res.status(201).json({ message: 'Playlist creada exitosamente', id: result.insertId });
     } catch (error) {
         console.error('Create playlist error:', error);
-        res.status(500).json({ error: 'Error al crear playlist' });
+        res.status(500).json({ error: 'Error al crear playlist', code: 'playlist_create_failed' });
     }
 });
 
@@ -82,7 +82,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         res.json({ message: 'Playlist actualizada exitosamente' });
     } catch (error) {
         console.error('Update playlist error:', error);
-        res.status(500).json({ error: 'Error al actualizar playlist' });
+        res.status(500).json({ error: 'Error al actualizar playlist', code: 'playlist_update_failed' });
     }
 });
 
@@ -93,7 +93,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         res.json({ message: 'Playlist eliminada exitosamente' });
     } catch (error) {
         console.error('Delete playlist error:', error);
-        res.status(500).json({ error: 'Error al eliminar playlist' });
+        res.status(500).json({ error: 'Error al eliminar playlist', code: 'playlist_delete_failed' });
     }
 });
 
@@ -110,7 +110,7 @@ router.post('/:id/songs', authenticateToken, async (req, res) => {
         );
 
         if (existing.length > 0) {
-            return res.status(400).json({ error: 'La canción ya está en la playlist' });
+            return res.status(400).json({ error: 'La canción ya está en la playlist', code: 'playlist_song_duplicate' });
         }
 
         // Get next order
@@ -127,7 +127,7 @@ router.post('/:id/songs', authenticateToken, async (req, res) => {
         res.status(201).json({ message: 'Canción agregada a la playlist' });
     } catch (error) {
         console.error('Add song to playlist error:', error);
-        res.status(500).json({ error: 'Error al agregar canción' });
+        res.status(500).json({ error: 'Error al agregar canción', code: 'playlist_song_add_failed' });
     }
 });
 
@@ -141,7 +141,7 @@ router.delete('/:id/songs/:songId', authenticateToken, async (req, res) => {
         res.json({ message: 'Canción removida de la playlist' });
     } catch (error) {
         console.error('Remove song error:', error);
-        res.status(500).json({ error: 'Error al remover canción' });
+        res.status(500).json({ error: 'Error al remover canción', code: 'playlist_song_remove_failed' });
     }
 });
 

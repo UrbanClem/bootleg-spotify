@@ -4,9 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 import { Alert } from '../components/Feedback';
 import { UserIcon, CloseIcon } from '../components/icons';
+import LanguageSwitch from '../components/LanguageSwitch';
+import { useI18n } from '../i18n';
+import { errorMessage } from '../utils';
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,9 +34,7 @@ export default function Login() {
       await login(email.trim(), password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(
-        err?.response?.data?.error ?? 'No pudimos iniciar sesión. Revisa tus datos.'
-      );
+      setError(errorMessage(err, t, t('auth.failed')));
       setBusy(false);
     }
   };
@@ -45,14 +47,14 @@ export default function Login() {
           Bootleg
         </div>
 
-        <h1 className="auth-title">Iniciar sesión</h1>
-        <p className="auth-sub">Sigue escuchando donde lo dejaste.</p>
+        <h1 className="auth-title">{t('auth.signIn')}</h1>
+        <p className="auth-sub">{t('auth.signInTagline')}</p>
 
         <form className="auth-form" onSubmit={submit}>
           {error && <Alert onDismiss={() => setError('')}>{error}</Alert>}
 
           <label className="field">
-            <span className="field-label">Correo</span>
+            <span className="field-label">{t('auth.email')}</span>
             <div className="input-group">
               <UserIcon size={20} />
               <input
@@ -60,7 +62,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
+                placeholder={t('auth.emailPlaceholder')}
                 autoComplete="email"
                 required
               />
@@ -68,7 +70,7 @@ export default function Login() {
           </label>
 
           <label className="field">
-            <span className="field-label">Contraseña</span>
+            <span className="field-label">{t('auth.password')}</span>
             <div className="input-group">
               <input
                 className="input"
@@ -84,7 +86,9 @@ export default function Login() {
                 type="button"
                 className="input-clear"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-label={
+                  showPassword ? t('auth.hidePassword') : t('auth.showPassword')
+                }
               >
                 {showPassword ? <CloseIcon size={18} /> : <UserIcon size={18} />}
               </button>
@@ -92,21 +96,25 @@ export default function Login() {
           </label>
 
           <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
-            {busy ? 'Entrando…' : 'Iniciar sesión'}
+            {busy ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
 
         <hr className="auth-divider" />
 
         <p className="auth-alt">
-          ¿Aún no tienes cuenta?{' '}
-          <Link to="/register">Regístrate en Spotify</Link>
+          {t('auth.noAccount')}{' '}
+          <Link to="/register">{t('auth.registerCta')}</Link>
         </p>
 
         <div className="auth-demo">
-          <strong>Cuenta de prueba</strong>
+          <strong>{t('auth.demoAccount')}</strong>
           <br />
           <code>test@email.com</code> · <code>123456</code>
+        </div>
+
+        <div className="auth-lang">
+          <LanguageSwitch />
         </div>
       </div>
     </div>

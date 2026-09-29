@@ -105,6 +105,13 @@
     font-size: 12px;
 }
 
+/* Language switch, centred below the demo credentials. */
+.auth-lang {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
 /* --------------------------------------------------------------------------
    Home
    -------------------------------------------------------------------------- */

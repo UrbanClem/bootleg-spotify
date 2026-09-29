@@ -9,9 +9,9 @@
 -- Safe to run more than once - it clears its own id range first.
 --
 -- The client charset matters. Without --default-character-set=utf8mb4 the
--- connection negotiates latin1, and every accented character in the Spanish
--- copy is flattened to "?" on the way in ("electrónica" -> "electr?nica").
--- Those mangled strings then show up in artist bios across the whole UI.
+-- connection negotiates latin1, and every accented character is flattened to
+-- "?" on the way in ("electrónica" -> "electr?nica"). Those mangled strings
+-- then show up in artist bios across the whole UI.
 --
 -- Run with:
 --   docker exec -i bootleg-spotify-db mysql -uroot \

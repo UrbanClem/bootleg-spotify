@@ -6,11 +6,13 @@ import TrackRow from '../components/TrackRow';
 import { DetailHero, DetailActions, DetailStats, ArtistMeta } from '../components/DetailPage';
 import { EmptyState, Spinner } from '../components/Feedback';
 import { MusicIcon } from '../components/icons';
-import { formatDate, heroTint, errorMessage } from '../utils';
+import { heroTint, errorMessage } from '../utils';
+import { useI18n } from '../i18n';
 
 export default function Album() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, date } = useI18n();
   const [album, setAlbum] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,7 +26,7 @@ export default function Album() {
     api
       .get(`/albums/${id}`)
       .then(({ data }) => alive && setAlbum(data))
-      .catch((err) => alive && setError(errorMessage(err, 'No se pudo cargar el álbum.')))
+      .catch((err) => alive && setError(errorMessage(err, t, t('album.loadError'))))
       .finally(() => alive && setLoading(false));
 
     return () => {
@@ -39,10 +41,10 @@ export default function Album() {
       <div className="page">
         <EmptyState
           icon={MusicIcon}
-          title="Álbum no encontrado"
+          title={t('album.notFound')}
           action={
             <button type="button" className="btn btn--primary" onClick={() => navigate('/search')}>
-              Buscar música
+              {t('album.searchMusic')}
             </button>
           }
         >
@@ -88,7 +90,7 @@ export default function Album() {
   return (
     <>
       <DetailHero
-        kindLabel="Álbum"
+        kindLabel={t('kind.album')}
         title={album.titulo}
         tint={heroTint(album.id_album)}
         art={album.portada ? `/uploads/images/${album.portada}` : null}
@@ -98,29 +100,32 @@ export default function Album() {
       <DetailActions onPlay={handlePlay} isPlaying={isCurrent && isPlaying} hasAudio={hasAudio}>
         {!hasAudio && songs.length > 0 && (
           <span className="text-subdued" style={{ fontSize: 13 }}>
-            Sin audio cargado todavía
+            {t('album.noAudioYet')}
           </span>
         )}
       </DetailActions>
 
       <DetailStats>
         <span>
-          <strong>{songs.length}</strong> {songs.length === 1 ? 'canción' : 'canciones'}
+          <strong>{songs.length}</strong>{' '}
+          {songs.length === 1 ? t('label.song') : t('label.songs')}
         </span>
-        {totalSeconds > 0 && <span>{Math.round(totalSeconds / 60)} min</span>}
-        {album.fecha_lanzamiento && <span>{formatDate(album.fecha_lanzamiento)}</span>}
+        {totalSeconds > 0 && (
+          <span>{t('plural.minute', { n: Math.round(totalSeconds / 60) })}</span>
+        )}
+        {album.fecha_lanzamiento && <span>{date(album.fecha_lanzamiento)}</span>}
       </DetailStats>
 
       <div className="page detail-body">
         {songs.length === 0 ? (
-          <EmptyState icon={MusicIcon} title="Este álbum todavía no tiene canciones">
-            Añade canciones desde el panel de administración.
+          <EmptyState icon={MusicIcon} title={t('album.emptyTitle')}>
+            {t('album.emptyText')}
           </EmptyState>
         ) : (
           <div className="track-list">
             <div className="track-head">
               <span>#</span>
-              <span>Título</span>
+              <span>{t('track.title')}</span>
               <span className="track-cell--album" />
               <span />
             </div>

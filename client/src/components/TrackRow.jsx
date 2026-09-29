@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
+import { useI18n } from '../i18n';
 import Artwork from './Artwork';
 import {
   PlayIcon,
@@ -37,6 +38,7 @@ export default function TrackRow({
   onMenu,
 }) {
   const { playSong, currentSong, isPlaying, togglePlay, addToQueue } = usePlayer();
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isCurrent = Boolean(currentSong && song.id_cancion === currentSong.id_cancion);
@@ -66,7 +68,7 @@ export default function TrackRow({
                 type="button"
                 className="track-play"
                 onClick={handlePlay}
-                aria-label={`Reproducir ${song.titulo}`}
+                aria-label={t('track.play', { title: song.titulo })}
               >
                 <PlayIcon size={16} />
               </button>
@@ -81,7 +83,7 @@ export default function TrackRow({
             type="button"
             className="track-art"
             onClick={handlePlay}
-            aria-label={`Reproducir ${song.titulo}`}
+            aria-label={t('track.play', { title: song.titulo })}
             style={coverStyle(song.id_album ?? song.titulo)}
           >
             <Artwork src={cover} alt="" seed={song.id_album ?? song.titulo} />
@@ -92,7 +94,7 @@ export default function TrackRow({
           <div className="track-title" title={song.titulo}>
             {song.titulo}
             {explicit && (
-              <span className="track-explicit" title="Contiene letra explícita">
+              <span className="track-explicit" title={t('track.explicit')}>
                 E
               </span>
             )}
@@ -101,7 +103,7 @@ export default function TrackRow({
             {song.id_artista ? (
               <Link to={`/artists/${song.id_artista}`}>{song.nombre_artista}</Link>
             ) : (
-              song.nombre_artista || 'Artista desconocido'
+              song.nombre_artista || t('track.unknownArtist')
             )}
             {song.artista_verificado ? <VerifiedIcon size={12} style={{ marginLeft: 4 }} /> : null}
           </div>
@@ -123,8 +125,8 @@ export default function TrackRow({
           type="button"
           className="toggle-btn"
           onClick={() => addToQueue(song)}
-          aria-label={`Añadir ${song.titulo} a la cola`}
-          title="Añadir a la cola"
+          aria-label={t('track.addToQueue', { title: song.titulo })}
+          title={t('track.addToQueueShort')}
         >
           <PlusIcon size={16} />
         </button>
@@ -137,7 +139,7 @@ export default function TrackRow({
               type="button"
               className="toggle-btn"
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label={`Más opciones para ${song.titulo}`}
+              aria-label={t('track.moreOptions', { title: song.titulo })}
               aria-expanded={menuOpen}
             >
               <MoreIcon size={16} />

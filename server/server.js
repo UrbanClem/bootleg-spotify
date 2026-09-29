@@ -50,7 +50,7 @@ app.get('/api/health', (req, res) => {
 // Error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ error: 'Algo salió mal!' });
+    res.status(500).json({ error: 'Algo salió mal!', code: 'server_error' });
 });
 
 app.listen(PORT, () => {

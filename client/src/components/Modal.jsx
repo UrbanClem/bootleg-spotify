@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { CloseIcon } from './icons';
+import { useI18n } from '../i18n';
 
 /**
  * Accessible dialog: locks background scroll, traps focus, closes on Escape
  * or backdrop click.
  */
 export default function Modal({ title, onClose, children, footer, wide = false }) {
+  const { t } = useI18n();
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function Modal({ title, onClose, children, footer, wide = false }
             type="button"
             className="toggle-btn"
             onClick={onClose}
-            aria-label="Cerrar"
+            aria-label={t('modal.close')}
           >
             <CloseIcon size={20} />
           </button>

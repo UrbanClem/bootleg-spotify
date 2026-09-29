@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
+import { useI18n } from '../i18n';
 import Artwork from './Artwork';
 import Slider from './Slider';
 import {
@@ -32,6 +33,7 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
     repeatMode,
     toggleRepeat,
   } = usePlayer();
+  const { t } = useI18n();
 
   if (!currentSong) {
     return (
@@ -39,8 +41,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
         <div className="player-now">
           <div className="player-now-art player-now-art--idle" />
           <div className="player-now-meta">
-            <span className="player-now-title text-subdued">Nada sonando</span>
-            <span className="player-now-artist">Elige una canción para empezar</span>
+            <span className="player-now-title text-subdued">{t('player.idle')}</span>
+            <span className="player-now-artist">{t('player.idleHint')}</span>
           </div>
         </div>
         <div className="player-center" />
@@ -81,7 +83,7 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             </Link>
           ) : (
             <span className="player-now-artist">
-              {currentSong.nombre_artista || 'Artista desconocido'}
+              {currentSong.nombre_artista || t('track.unknownArtist')}
             </span>
           )}
         </div>
@@ -94,8 +96,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             className={`toggle-btn${isShuffle ? ' is-active' : ''}`}
             onClick={toggleShuffle}
             aria-pressed={isShuffle}
-            aria-label="Aleatorio"
-            title="Aleatorio"
+            aria-label={t('player.shuffle')}
+            title={t('player.shuffle')}
           >
             <ShuffleIcon size={18} />
           </button>
@@ -104,8 +106,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             type="button"
             className="toggle-btn"
             onClick={prev}
-            aria-label="Anterior"
-            title="Anterior"
+            aria-label={t('player.previous')}
+            title={t('player.previous')}
           >
             <PrevIcon size={18} />
           </button>
@@ -115,8 +117,14 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             className="play-button play-button--sm"
             onClick={togglePlay}
             disabled={!hasAudio}
-            aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-            title={hasAudio ? (isPlaying ? 'Pausar' : 'Reproducir') : 'Sin archivo de audio'}
+            aria-label={isPlaying ? t('player.pause') : t('player.play')}
+            title={
+              hasAudio
+                ? isPlaying
+                  ? t('player.pause')
+                  : t('player.play')
+                : t('player.noAudio')
+            }
           >
             {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
           </button>
@@ -125,8 +133,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             type="button"
             className="toggle-btn"
             onClick={next}
-            aria-label="Siguiente"
-            title="Siguiente"
+            aria-label={t('player.next')}
+            title={t('player.next')}
           >
             <NextIcon size={18} />
           </button>
@@ -135,13 +143,13 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             type="button"
             className={`toggle-btn${repeatMode > 0 ? ' is-active' : ''}`}
             onClick={toggleRepeat}
-            aria-label="Repetir"
+            aria-label={t('player.repeat')}
             title={
               repeatMode === 0
-                ? 'Repetir: desactivado'
+                ? t('player.repeatOff')
                 : repeatMode === 1
-                  ? 'Repetir: toda la lista'
-                  : 'Repetir: una canción'
+                  ? t('player.repeatAll')
+                  : t('player.repeatOne')
             }
           >
             <RepeatIcon size={18} />
@@ -154,8 +162,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             value={progress}
             max={duration || 0}
             step={1}
-            label="Progreso de reproducción"
-            valueText={`${formatDuration(progress)} de ${formatDuration(duration)}`}
+            label={t('player.progress')}
+            valueText={`${formatDuration(progress)} / ${formatDuration(duration)}`}
             onChange={seekTo}
           />
           <span className="player-time">
@@ -168,8 +176,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
         <button
           type="button"
           className="toggle-btn"
-          aria-label="Cola de reproducción"
-          title="Cola de reproducción"
+          aria-label={t('player.queue')}
+          title={t('player.queue')}
           aria-pressed={queueOpen}
           onClick={onToggleQueue}
         >
@@ -181,7 +189,8 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             type="button"
             className="toggle-btn"
             onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
-            aria-label={volume === 0 ? 'Activar sonido' : 'Silenciar'}
+            aria-label={volume === 0 ? t('player.unmute') : t('player.mute')}
+            title={volume === 0 ? t('player.unmute') : t('player.mute')}
           >
             <VolumeIcon size={18} level={volumeLevel} />
           </button>
@@ -189,7 +198,7 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
             value={volume}
             max={1}
             green
-            label="Volumen"
+            label={t('player.volume')}
             valueText={`${Math.round(volume * 100)}%`}
             onChange={setVolume}
           />

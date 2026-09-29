@@ -7,11 +7,13 @@ import MediaCard from '../components/MediaCard';
 import { DetailHero, DetailActions, DetailStats } from '../components/DetailPage';
 import { EmptyState, Spinner } from '../components/Feedback';
 import { ArtistIcon, PlayIcon } from '../components/icons';
-import { heroTint, errorMessage, formatDate } from '../utils';
+import { heroTint, errorMessage } from '../utils';
+import { useI18n } from '../i18n';
 
 export default function Artist() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, date, n } = useI18n();
   const [artist, setArtist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function Artist() {
     api
       .get(`/artists/${id}`)
       .then(({ data }) => alive && setArtist(data))
-      .catch((err) => alive && setError(errorMessage(err, 'No se pudo cargar el artista.')))
+      .catch((err) => alive && setError(errorMessage(err, t, t('artist.loadError'))))
       .finally(() => alive && setLoading(false));
 
     return () => {
@@ -54,10 +56,10 @@ export default function Artist() {
       <div className="page">
         <EmptyState
           icon={ArtistIcon}
-          title="Artista no encontrado"
+          title={t('artist.notFound')}
           action={
             <button type="button" className="btn btn--primary" onClick={() => navigate('/search')}>
-              Buscar artistas
+              {t('artist.searchArtists')}
             </button>
           }
         >
@@ -78,15 +80,17 @@ export default function Artist() {
   return (
     <>
       <DetailHero
-        kindLabel="Artista"
+        kindLabel={t('kind.artist')}
         title={artist.nombre_artista}
         tint={heroTint(artist.id_artista)}
         art={artist.foto_perfil ? `/uploads/artists/${artist.foto_perfil}` : null}
         round
         meta={
-          <>
-            <span>{artist.seguidores ? `${artist.seguidores.toLocaleString('es-ES')} seguidores` : 'Artista'}</span>
-          </>
+          artist.seguidores ? (
+            <span>{t('artist.followers', { n: n(artist.seguidores) })}</span>
+          ) : (
+            <span>{t('artist.generic')}</span>
+          )
         }
         note={artist.biografia}
       />
@@ -95,20 +99,23 @@ export default function Artist() {
 
       <DetailStats>
         <span>
-          <strong>{songs.length}</strong> {songs.length === 1 ? 'canción' : 'canciones'}
+          <strong>{songs.length}</strong>{' '}
+          {songs.length === 1 ? t('label.song') : t('label.songs')}
         </span>
-        {artist.fecha_registro && <span>En la plataforma desde {formatDate(artist.fecha_registro)}</span>}
+        {artist.fecha_registro && (
+          <span>{t('artist.onPlatformSince', { date: date(artist.fecha_registro) })}</span>
+        )}
       </DetailStats>
 
       <div className="page detail-body">
         {songs.length === 0 ? (
-          <EmptyState icon={ArtistIcon} title="Este artista todavía no tiene canciones">
-            Añade canciones desde el panel de administración.
+          <EmptyState icon={ArtistIcon} title={t('artist.emptyTitle')}>
+            {t('artist.emptyText')}
           </EmptyState>
         ) : (
           <>
             <div className="section-head">
-              <h2 className="section-title">Populares</h2>
+              <h2 className="section-title">{t('artist.popular')}</h2>
             </div>
             <div className="track-list">
               {popular.map((song, i) => (
@@ -124,17 +131,17 @@ export default function Artist() {
 
             <div className="row" style={{ margin: '16px 0 32px' }}>
               <button type="button" className="btn btn--outline" onClick={() => playSong(popular[0], popular)}>
-                <PlayIcon size={16} /> Reproducir populares
+                <PlayIcon size={16} /> {t('artist.playPopular')}
               </button>
               <button type="button" className="btn btn--ghost" onClick={() => songs.forEach(addToQueue)}>
-                Añadir todo a la cola
+                {t('artist.addAllToQueue')}
               </button>
             </div>
 
             {songs.length > popular.length && (
               <>
                 <div className="section-head">
-                  <h2 className="section-title">Todas las canciones</h2>
+                  <h2 className="section-title">{t('label.songs')}</h2>
                 </div>
                 <div className="track-list">
                   {(showAll ? songs : songs.slice(5)).map((song, i) => (
@@ -153,7 +160,7 @@ export default function Artist() {
                     className="btn btn--outline"
                     onClick={() => setShowAll((v) => !v)}
                   >
-                    {showAll ? 'Ver menos' : `Ver las ${songs.length} canciones`}
+                    {showAll ? t('artist.seeLess') : t('artist.seeAllSongs', { n: songs.length })}
                   </button>
                 </div>
               </>
@@ -163,7 +170,7 @@ export default function Artist() {
 
         <section className="section" style={{ marginTop: 40 }}>
           <div className="section-head">
-            <h2 className="section-title">Aparece en</h2>
+            <h2 className="section-title">{t('artist.appearsOn')}</h2>
           </div>
           <AlbumAppearances artistId={artist.id_artista} />
         </section>
@@ -179,6 +186,7 @@ export default function Artist() {
  * album catalogue and de-duplicates by the ids seen on the artist's tracks.
  */
 function AlbumAppearances({ artistId }) {
+  const { t } = useI18n();
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -204,9 +212,10 @@ function AlbumAppearances({ artistId }) {
           key={album.id_album}
           item={album}
           kind="album"
-          subtitle={`${album.fecha_lanzamiento?.slice(0, 4) ?? ''} · ${
-            album.total_canciones ?? 0
-          } canciones`}
+          subtitle={t('artist.appearsOnSubtitle', {
+            year: album.fecha_lanzamiento?.slice(0, 4) ?? '',
+            count: t('plural.song', { n: album.total_canciones ?? 0 })
+          })}
           onPlay
         />
       ))}

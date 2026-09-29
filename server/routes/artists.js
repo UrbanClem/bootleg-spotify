@@ -17,7 +17,7 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Get artists error:', error);
-        res.status(500).json({ error: 'Error al obtener artistas' });
+        res.status(500).json({ error: 'Error al obtener artistas', code: 'artists_list_failed' });
     }
 });
 
@@ -26,7 +26,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM artista WHERE id_artista = ?', [req.params.id]);
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Artista no encontrado' });
+            return res.status(404).json({ error: 'Artista no encontrado', code: 'artist_not_found' });
         }
 
         const [songs] = await pool.query(`
@@ -46,7 +46,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         res.json({ ...rows[0], canciones: withArtist });
     } catch (error) {
         console.error('Get artist error:', error);
-        res.status(500).json({ error: 'Error al obtener artista' });
+        res.status(500).json({ error: 'Error al obtener artista', code: 'artist_fetch_failed' });
     }
 });
 
@@ -63,7 +63,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         res.status(201).json({ message: 'Artista creado exitosamente', id: result.insertId });
     } catch (error) {
         console.error('Create artist error:', error);
-        res.status(500).json({ error: 'Error al crear artista' });
+        res.status(500).json({ error: 'Error al crear artista', code: 'artist_create_failed' });
     }
 });
 
@@ -80,7 +80,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'Artista actualizado exitosamente' });
     } catch (error) {
         console.error('Update artist error:', error);
-        res.status(500).json({ error: 'Error al actualizar artista' });
+        res.status(500).json({ error: 'Error al actualizar artista', code: 'artist_update_failed' });
     }
 });
 
@@ -91,7 +91,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'Artista eliminado exitosamente' });
     } catch (error) {
         console.error('Delete artist error:', error);
-        res.status(500).json({ error: 'Error al eliminar artista' });
+        res.status(500).json({ error: 'Error al eliminar artista', code: 'artist_delete_failed' });
     }
 });
 
