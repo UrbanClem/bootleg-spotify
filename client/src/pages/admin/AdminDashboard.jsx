@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from '../../api';
-import Layout from '../../components/Layout';
 import { AuthContext } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
@@ -49,8 +48,7 @@ const AdminDashboard = () => {
     ];
 
     return (
-        <Layout>
-            <div className="container py-4">
+        <div className="container py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h1>Panel de Administración</h1>
                     <span className="badge bg-success fs-6">Admin</span>

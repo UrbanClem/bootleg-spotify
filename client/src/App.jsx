@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Player from './components/Player';
@@ -33,21 +33,21 @@ function LoadingSpinner() {
   );
 }
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return children;
+  return <Outlet />;
 }
 
-function AdminRoute({ children }) {
+function AdminRoute() {
   const { isAuthenticated, isAdmin, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
-  return children;
+  return <Outlet />;
 }
 
 function App() {
@@ -55,31 +55,34 @@ function App() {
 
   return (
     <div className="min-vh-100 bg-dark text-white">
-      {isAuthenticated && <Layout />}
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected routes */}
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/songs" element={<ProtectedRoute><Songs /></ProtectedRoute>} />
-          <Route path="/albums" element={<ProtectedRoute><Albums /></ProtectedRoute>} />
-          <Route path="/albums/:id" element={<ProtectedRoute><AlbumDetail /></ProtectedRoute>} />
-          <Route path="/artists" element={<ProtectedRoute><Artists /></ProtectedRoute>} />
-          <Route path="/playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
-          <Route path="/playlists/:id" element={<ProtectedRoute><PlaylistDetail /></ProtectedRoute>} />
-          <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+          {/* Protected routes with Layout */}
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/songs" element={<Songs />} />
+            <Route path="/albums" element={<Albums />} />
+            <Route path="/albums/:id" element={<AlbumDetail />} />
+            <Route path="/artists" element={<Artists />} />
+            <Route path="/playlists" element={<Playlists />} />
+            <Route path="/playlists/:id" element={<PlaylistDetail />} />
+            <Route path="/search" element={<Search />} />
+          </Route>
 
-          {/* Admin routes */}
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/songs" element={<AdminRoute><AdminSongs /></AdminRoute>} />
-          <Route path="/admin/albums" element={<AdminRoute><AdminAlbums /></AdminRoute>} />
-          <Route path="/admin/artists" element={<AdminRoute><AdminArtists /></AdminRoute>} />
-          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-          <Route path="/admin/profile" element={<AdminRoute><AdminProfile /></AdminRoute>} />
+          {/* Admin routes with Layout */}
+          <Route element={<AdminRoute><Layout /></AdminRoute>}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/songs" element={<AdminSongs />} />
+            <Route path="/admin/albums" element={<AdminAlbums />} />
+            <Route path="/admin/artists" element={<AdminArtists />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
+          </Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
