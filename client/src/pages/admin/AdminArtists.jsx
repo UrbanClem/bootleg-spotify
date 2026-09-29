@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
 import axios from '../../api';
-import Layout from '../../components/Layout';
 import ArtistCard from '../../components/ArtistCard';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -182,101 +181,99 @@ const AdminArtists = () => {
     );
 
     return (
-        <Layout>
-            <div className="container py-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Gestión de Artistas</h1>
-                    <button className="btn btn-success" onClick={handleAdd}>
-                        Nuevo Artista
-                    </button>
-                </div>
+          <div className="container py-4">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h1>Gestión de Artistas</h1>
+                  <button className="btn btn-success" onClick={handleAdd}>
+                      Nuevo Artista
+                  </button>
+              </div>
 
-                {loading && (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-success" role="status">
-                            <span className="visually-hidden">Cargando...</span>
-                        </div>
-                        <p className="mt-2 text-muted">Cargando artistas...</p>
-                    </div>
-                )}
+              {loading && (
+                  <div className="text-center py-5">
+                      <div className="spinner-border text-success" role="status">
+                          <span className="visually-hidden">Cargando...</span>
+                      </div>
+                      <p className="mt-2 text-muted">Cargando artistas...</p>
+                  </div>
+              )}
 
-                {error && (
-                    <div className="alert alert-danger" role="alert">
-                        {error}
-                    </div>
-                )}
+              {error && (
+                  <div className="alert alert-danger" role="alert">
+                      {error}
+                  </div>
+              )}
 
-                {!loading && !error && (
-                    <>
-                        {artists.length === 0 ? (
-                            <div className="alert alert-info">
-                                No hay artistas registrados.
-                            </div>
-                        ) : (
-                            <div className="row g-4">
-                                {artists.map(artist => (
-                                    <div className="col-md-6 col-lg-4" key={artist.id_artista}>
-                                        <div className="position-relative">
-                                            <ArtistCard artist={artist} />
-                                            <div className="position-absolute top-0 end-0 m-2 d-flex gap-1">
-                                                <button
-                                                    className="btn btn-sm btn-warning"
-                                                    onClick={() => handleEdit(artist)}
-                                                    title="Editar"
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button
-                                                    className="btn btn-sm btn-danger"
-                                                    onClick={() => handleDelete(artist.id_artista)}
-                                                    title="Eliminar"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </>
-                )}
+              {!loading && !error && (
+                  <>
+                      {artists.length === 0 ? (
+                          <div className="alert alert-info">
+                              No hay artistas registrados.
+                          </div>
+                      ) : (
+                          <div className="row g-4">
+                              {artists.map(artist => (
+                                  <div className="col-md-6 col-lg-4" key={artist.id_artista}>
+                                      <div className="position-relative">
+                                          <ArtistCard artist={artist} />
+                                          <div className="position-absolute top-0 end-0 m-2 d-flex gap-1">
+                                              <button
+                                                  className="btn btn-sm btn-warning"
+                                                  onClick={() => handleEdit(artist)}
+                                                  title="Editar"
+                                              >
+                                                  ✏️
+                                              </button>
+                                              <button
+                                                  className="btn btn-sm btn-danger"
+                                                  onClick={() => handleDelete(artist.id_artista)}
+                                                  title="Eliminar"
+                                              >
+                                                  🗑️
+                                              </button>
+                                          </div>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      )}
+                  </>
+              )}
 
-                {/* Add Modal */}
-                {showAddModal && (
-                    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <div className="modal-dialog">
-                            <div className="modal-content bg-dark text-white">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">Nuevo Artista</h5>
-                                    <button type="button" className="btn-close btn-close-white" onClick={() => setShowAddModal(false)}></button>
-                                </div>
-                                <div className="modal-body">
-                                    {renderForm()}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+              {/* Add Modal */}
+              {showAddModal && (
+                  <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                      <div className="modal-dialog">
+                          <div className="modal-content bg-dark text-white">
+                              <div className="modal-header">
+                                  <h5 className="modal-title">Nuevo Artista</h5>
+                                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowAddModal(false)}></button>
+                              </div>
+                              <div className="modal-body">
+                                  {renderForm()}
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              )}
 
-                {/* Edit Modal */}
-                {showEditModal && (
-                    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <div className="modal-dialog">
-                            <div className="modal-content bg-dark text-white">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">Editar Artista</h5>
-                                    <button type="button" className="btn-close btn-close-white" onClick={() => setShowEditModal(false)}></button>
-                                </div>
-                                <div className="modal-body">
-                                    {renderForm()}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </Layout>
+              {/* Edit Modal */}
+              {showEditModal && (
+                  <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                      <div className="modal-dialog">
+                          <div className="modal-content bg-dark text-white">
+                              <div className="modal-header">
+                                  <h5 className="modal-title">Editar Artista</h5>
+                                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowEditModal(false)}></button>
+                              </div>
+                              <div className="modal-body">
+                                  {renderForm()}
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              )}
+          </div>
     );
 };
 
