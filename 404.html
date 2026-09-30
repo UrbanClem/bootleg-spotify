@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bootleg Spotify</title>
+    <script>
+        // GitHub Pages serves this file for any path that does not exist, which
+        // includes every client-side route (/albums/1021, /artists/6, ...).
+        // Send the visitor back to the app entry point with the original path
+        // preserved in `?p=`; main.jsx picks it up before the router mounts.
+        //
+        // The base path must match VITE_BASE in vite.demo.config.js.
+        var BASE = '/bootleg-spotify/';
+        var l = window.location;
+        var target = BASE + '?p=' + encodeURIComponent(l.pathname + l.search);
+        if (l.pathname.indexOf(BASE) === 0) {
+            // Already under the base (a real 404 inside the app): go to the root.
+            target = BASE;
+        }
+        l.replace(target);
+    </script>
+</head>
+<body>
+    <p>Redirecting…</p>
+</body>
+</html>
