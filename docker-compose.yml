@@ -35,7 +35,10 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./uploads:/app/uploads
+      # Persist uploads outside the image so admin uploads survive a rebuild.
+      # The catalogue's own audio is committed at server/uploads/audio and is
+      # baked into the image; this mount just layers new files on top.
+      - ./server/uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
