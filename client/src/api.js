@@ -14,7 +14,7 @@ if (DEMO) {
   api = demo.default;
 } else {
   api = axios.create({
-    baseURL: '/api',
+    baseURL: import.meta.env.VITE_API_URL || '/api',
     headers: {
       'Content-Type': 'application/json'
     }

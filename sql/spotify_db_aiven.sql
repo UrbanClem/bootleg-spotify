@@ -1,0 +1,875 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 21-11-2025 a las 15:31:14
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de datos: `spotify_db`
+--
+
+DELIMITER $$
+--
+-- Procedimientos
+--
+CREATE  PROCEDURE `AgregarCancionAPlaylist` (IN `p_id_playlist` INT, IN `p_id_cancion` INT, IN `p_orden` INT)   BEGIN
+    DECLARE retry_count INT DEFAULT 0;
+    DECLARE max_retries INT DEFAULT 3;
+    DECLARE success BOOLEAN DEFAULT FALSE;
+    
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            DECLARE EXIT HANDLER FOR 1213 -- Código de error para deadlock
+            BEGIN
+                SET retry_count = retry_count + 1;
+                IF retry_count = max_retries THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Deadlock después de múltiples intentos';
+                END IF;
+                DO SLEEP(0.1 * retry_count);
+            END;
+            
+            INSERT INTO playlist_cancion (id_playlist, id_cancion, orden)
+            VALUES (p_id_playlist, p_id_cancion, p_orden);
+            
+            SET success = TRUE;
+        END;
+    END WHILE;
+END$$
+
+CREATE  PROCEDURE `CrearPlaylistConCanciones` (IN `p_id_usuario` INT, IN `p_nombre_playlist` VARCHAR(255), IN `p_privada` BOOLEAN, IN `p_canciones` JSON)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Insertar la nueva playlist
+    INSERT INTO playlist (nombre_playlist, id_usuario, privada, fecha_creacion)
+    VALUES (p_nombre_playlist, p_id_usuario, p_privada, NOW());
+    
+    SET @nueva_playlist_id = LAST_INSERT_ID();
+    
+    -- Insertar canciones en la playlist
+    SET @i = 0;
+    SET @canciones_count = JSON_LENGTH(p_canciones);
+    
+    WHILE @i < @canciones_count DO
+        INSERT INTO playlist_cancion (id_playlist, id_cancion, orden)
+        VALUES (
+            @nueva_playlist_id,
+            JSON_UNQUOTE(JSON_EXTRACT(p_canciones, CONCAT('$[', @i, '].id_cancion'))),
+            JSON_UNQUOTE(JSON_EXTRACT(p_canciones, CONCAT('$[', @i, '].orden')))
+        );
+        SET @i = @i + 1;
+    END WHILE;
+    
+    -- Verificar que todas las canciones se insertaron
+    IF (SELECT COUNT(*) FROM playlist_cancion WHERE id_playlist = @nueva_playlist_id) = @canciones_count THEN
+        COMMIT;
+        SELECT 'Playlist creada exitosamente' AS resultado, @nueva_playlist_id AS id_playlist;
+    ELSE
+        ROLLBACK;
+        SELECT 'Error: No se pudieron agregar todas las canciones' AS resultado;
+    END IF;
+END$$
+
+CREATE  PROCEDURE `IncrementarPopularidadCancion` (IN `p_id_cancion` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    
+    UPDATE cancion
+    SET popularidad = popularidad + 1
+    WHERE id_cancion = p_id_cancion;
+    
+    IF ROW_COUNT() = 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Canción no encontrada';
+    ELSE
+        COMMIT;
+    END IF;
+END$$
+
+CREATE  PROCEDURE `MigrarHistorialAntiguo` (IN `p_anio` INT)   BEGIN
+    -- Mover datos antiguos a la tabla particionada (sin FKs)
+    INSERT INTO historial_reproduccion_archivo
+    SELECT * FROM historial_reproduccion 
+    WHERE YEAR(fecha_reproduccion) = p_anio;
+    
+    -- Eliminar los datos movidos
+    DELETE FROM historial_reproduccion 
+    WHERE YEAR(fecha_reproduccion) = p_anio;
+END$$
+
+CREATE  PROCEDURE `RegistrarReproduccion` (IN `p_id_usuario` INT, IN `p_id_cancion` INT, IN `p_duracion_escuchada` INT, IN `p_dispositivo` VARCHAR(100))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Registrar en el historial
+    INSERT INTO historial_reproduccion (id_usuario, id_cancion, duracion_escuchada, dispositivo)
+    VALUES (p_id_usuario, p_id_cancion, p_duracion_escuchada, p_dispositivo);
+    
+    -- Actualizar popularidad de la canción
+    UPDATE cancion 
+    SET popularidad = popularidad + 1 
+    WHERE id_cancion = p_id_cancion;
+    
+    -- Actualizar reproducciones totales del artista
+    UPDATE artista a
+    JOIN cancion c ON a.id_artista = c.id_artista
+    SET a.reproducciones_totales = a.reproducciones_totales + 1
+    WHERE c.id_cancion = p_id_cancion;
+    
+    COMMIT;
+END$$
+
+CREATE  PROCEDURE `SeguirUsuarioYCrearPlaylist` (IN `p_id_usuario_seguidor` INT, IN `p_id_usuario_seguido` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Seguir al usuario
+    INSERT INTO seguidores (id_usuario, id_usuario_seguido, fecha_seguimiento)
+    VALUES (p_id_usuario_seguidor, p_id_usuario_seguido, NOW());
+    
+    -- Crear nueva playlist
+    INSERT INTO playlist (nombre_playlist, id_usuario, privada, fecha_creacion)
+    VALUES (CONCAT('Playlist inspirada en usuario ', p_id_usuario_seguido), p_id_usuario_seguidor, FALSE, NOW());
+    
+    SET @nueva_playlist_id = LAST_INSERT_ID();
+    
+    -- Copiar primeras 10 canciones de las playlists del usuario seguido
+    INSERT INTO playlist_cancion (id_playlist, id_cancion, orden)
+    SELECT @nueva_playlist_id, pc.id_cancion, ROW_NUMBER() OVER()
+    FROM playlist_cancion pc
+    JOIN playlist p ON pc.id_playlist = p.id_playlist
+    WHERE p.id_usuario = p_id_usuario_seguido
+    LIMIT 10;
+    
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `album`
+--
+
+CREATE TABLE `album` (
+  `id_album` int(11) NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(255) NOT NULL,
+  `id_artista` int(11) NOT NULL,
+  `fecha_lanzamiento` date DEFAULT NULL,
+  `portada` varchar(255) DEFAULT NULL,
+  `genero` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id_album`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `album`
+--
+
+-- The demo catalogue was replaced with real albums. `Toxicity` was dropped
+-- along with the rest; its song survives with no album attached, because it is
+-- the only track that ships with an audio file.
+INSERT INTO `album` (`id_album`, `titulo`, `id_artista`, `fecha_lanzamiento`, `portada`, `genero`) VALUES
+(1013, 'OK Computer',               1013, '1997-05-21', NULL, 'Alternative rock'),
+(1014, 'Paranoid',                  1014, '1970-09-18', NULL, 'Heavy metal'),
+(1015, 'System of a Down',          6,    '1998-06-30', NULL, 'Alternative metal'),
+(1016, 'Steal This Album!',         6,    '2002-11-26', NULL, 'Alternative metal'),
+(1017, 'Mezmerize',                 6,    '2005-05-17', NULL, 'Alternative metal'),
+(1018, 'Hypnotize',                 6,    '2005-11-22', NULL, 'Alternative metal'),
+(1019, 'Vulgar Display of Power',   1015, '1992-02-25', NULL, 'Groove metal'),
+(1020, 'Rust in Peace',             1016, '1990-09-24', NULL, 'Thrash metal'),
+(1021, 'Nevermind',                 1017, '1991-09-24', NULL, 'Grunge'),
+(1022, 'Black Sabbath',             1014, '1970-02-13', NULL, 'Heavy metal'),
+(1023, 'Around the Fur',            1018, '1997-10-28', NULL, 'Alternative metal'),
+(1024, 'Demon Days',                1019, '2005-05-11', NULL, 'Alternative rock');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `artista`
+--
+
+CREATE TABLE `artista` (
+  `id_artista` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre_artista` varchar(100) NOT NULL,
+  `verificado` tinyint(1) DEFAULT 0,
+  `biografia` text DEFAULT NULL,
+  `fecha_registro` date DEFAULT NULL,
+  `reproducciones_totales` bigint(20) DEFAULT 0,
+  `seguidores` int(11) DEFAULT 0,
+  `foto_perfil` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id_artista`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `artista`
+--
+
+INSERT INTO `artista` (`id_artista`, `nombre_artista`, `verificado`, `biografia`, `fecha_registro`, `reproducciones_totales`, `seguidores`, `foto_perfil`) VALUES
+(6, 'System Of A Down', 1, 'System of a Down es una banda armenio-estadounidense de heavy metal, formada en 1994 en Glendale, California.​ Está integrada por el vocalista Serj Tankian, el guitarrista Daron Malakian, el bajista Shavo Odadjian y el baterista John Dolmayan.​ Los miembros de la banda son de origen armenio.​​', '2025-11-19', 0, 0, 'System_Of_A_Down_691df42f8362b.webp'),
+(1013, 'Radiohead', 1, NULL, NULL, 0, 0, NULL),
+(1014, 'Black Sabbath', 1, NULL, NULL, 0, 0, NULL),
+(1015, 'Pantera', 1, NULL, NULL, 0, 0, NULL),
+(1016, 'Megadeth', 1, NULL, NULL, 0, 0, NULL),
+(1017, 'Nirvana', 1, NULL, NULL, 0, 0, NULL),
+(1018, 'Deftones', 1, NULL, NULL, 0, 0, NULL),
+(1019, 'Gorillaz', 1, NULL, NULL, 0, 0, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `artista_seguido`
+--
+
+CREATE TABLE `artista_seguido` (
+  `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
+  `id_artista` int(11) NOT NULL,
+  `fecha_seguimiento` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_usuario`,`id_artista`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Disparadores `artista_seguido`
+--
+DELIMITER $$
+CREATE TRIGGER `actualizar_seguidores_artista` AFTER INSERT ON `artista_seguido` FOR EACH ROW BEGIN
+    UPDATE artista 
+    SET seguidores = seguidores + 1 
+    WHERE id_artista = NEW.id_artista;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `decrementar_seguidores_artista` AFTER DELETE ON `artista_seguido` FOR EACH ROW BEGIN
+    UPDATE artista 
+    SET seguidores = seguidores - 1 
+    WHERE id_artista = OLD.id_artista;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cancion`
+--
+
+CREATE TABLE `cancion` (
+  `id_cancion` int(11) NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(255) NOT NULL,
+  `duracion` int(11) NOT NULL,
+  `id_artista` int(11) NOT NULL,
+  `id_album` int(11) DEFAULT NULL,
+  `popularidad` int(11) DEFAULT 0,
+  `fecha_lanzamiento` date DEFAULT NULL,
+  `archivo_audio` varchar(255) NOT NULL,
+  `letra` text DEFAULT NULL,
+  `explicit` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`id_cancion`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `cancion`
+--
+
+-- Album 6 no longer exists, so this track is stored with no album. It is the
+-- only song that ships with an audio file, which is why it was kept.
+-- Toxicity keeps its audio file; every other track is a title only.
+INSERT INTO `cancion` (`id_cancion`, `titulo`, `duracion`, `id_artista`, `id_album`, `popularidad`, `fecha_lanzamiento`, `archivo_audio`, `letra`, `explicit`) VALUES
+(10, 'Toxicity', 205, 6, NULL, 0, '2001-09-04', '691df840875d7.mp3', '', 1),
+(1031, 'Airbag', 244, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1032, 'Paranoid Android', 386, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1033, 'Subterranean Homesick Alien', 277, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1034, 'Exit Music (For a Film)', 258, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1035, 'Let Down', 299, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1036, 'Karma Police', 264, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1037, 'Fitter Happier', 117, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1038, 'Electioneering', 234, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1039, 'Climbing Up the Walls', 282, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1040, 'No Surprises', 229, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1041, 'Lucky', 271, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1042, 'The Tourist', 323, 1013, 1013, 0, '1997-05-21', '', NULL, 0),
+(1043, 'War Pigs', 478, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1044, 'Paranoid', 172, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1045, 'Planet Caravan', 284, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1046, 'Iron Man', 356, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1047, 'Electric Funeral', 293, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1048, 'Hand of Doom', 428, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1049, 'Rat Salad', 150, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1050, 'Fairies Wear Boots', 384, 1014, 1014, 0, '1970-09-18', '', NULL, 0),
+(1051, 'Suite-Pee', 160, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1052, 'Know', 186, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1053, 'Sugar', 153, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1054, 'Suggestions', 235, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1055, 'Spiders', 205, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1056, 'DDevil', 110, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1057, 'Soil', 204, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1058, 'War?', 130, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1059, 'Mind', 395, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1060, 'Peephole', 250, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1061, 'CUBErt', 128, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1062, 'Darts', 122, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1063, 'P.L.U.C.K.', 230, 6, 1015, 0, '1998-06-30', '', NULL, 1),
+(1064, 'Chic \'n\' Stu', 133, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1065, 'Innervision', 132, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1066, 'Bubbles', 118, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1067, 'Boom!', 166, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1068, 'Nüguns', 190, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1069, 'A.D.D.', 210, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1070, 'Mr. Jack', 248, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1071, 'I-A-X-I-D', 110, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1072, '36', 270, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1073, 'Pictures', 120, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1074, 'Highway Song', 210, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1075, 'Fuck the System', 160, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1076, 'Ego Brain', 220, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1077, 'Thetawaves', 170, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1078, 'Roulette', 200, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1079, 'Streamline', 220, 6, 1016, 0, '2002-11-26', '', NULL, 1),
+(1080, 'Soldier Side', 220, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1081, 'B.Y.O.B.', 254, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1082, 'Revenga', 220, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1083, 'Cigaro', 130, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1084, 'Radio/Video', 240, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1085, 'This Cocaine Makes Me Feel Like I\'m on This Song', 140, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1086, 'Violent Pornography', 210, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1087, 'Question!', 200, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1088, 'Sad Statue', 200, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1089, 'Old School Hollywood', 180, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1090, 'Lost in Hollywood', 240, 6, 1017, 0, '2005-05-17', '', NULL, 1),
+(1091, 'Attack', 190, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1092, 'Dreaming', 240, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1093, 'Kill Rock \'n Roll', 150, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1094, 'Hypnotize', 200, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1095, 'Stealing Society', 170, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1096, 'Tentative', 220, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1097, 'U-Fig', 180, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1098, 'Holy Mountains', 320, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1099, 'Vicinity of Obscenity', 170, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1100, 'She\'s Like Heroin', 160, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1101, 'Lonely Day', 170, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1102, 'Soldier Side - Intro', 120, 6, 1018, 0, '2005-11-22', '', NULL, 1),
+(1103, 'Mouth for War', 230, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1104, 'A New Level', 230, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1105, 'Walk', 310, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1106, 'Fucking Hostile', 160, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1107, 'This Love', 370, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1108, 'Rise', 280, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1109, 'No Good (Attack the Radical)', 290, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1110, 'Live in a Hole', 300, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1111, 'Regular People (Conceit)', 320, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1112, 'By Demons Be Driven', 290, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1113, 'Hollow', 320, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1114, 'I\'m Broken', 270, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1115, '5 Minutes Alone', 350, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1116, 'Throes of Rejection', 300, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1117, 'Piss', 350, 1015, 1019, 0, '1992-02-25', '', NULL, 1),
+(1118, 'Holy Wars... The Punishment Due', 390, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1119, 'Hangar 18', 310, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1120, 'Take No Prisoners', 200, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1121, 'Five Magics', 320, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1122, 'Poison Was the Cure', 170, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1123, 'Lucretia', 230, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1124, 'Tornado of Souls', 310, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1125, 'Dawn Patrol', 100, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1126, 'Rust in Peace... Polaris', 340, 1016, 1020, 0, '1990-09-24', '', NULL, 0),
+(1127, 'Smells Like Teen Spirit', 295, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1128, 'In Bloom', 255, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1129, 'Come as You Are', 219, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1130, 'Breed', 184, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1131, 'Lithium', 257, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1132, 'Polly', 174, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1133, 'Territorial Pissings', 142, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1134, 'Drain You', 224, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1135, 'Lounge Act', 156, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1136, 'Stay Away', 212, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1137, 'On a Plain', 196, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1138, 'Something in the Way', 232, 1017, 1021, 0, '1991-09-24', '', NULL, 0),
+(1139, 'Black Sabbath', 390, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1140, 'The Wizard', 260, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1141, 'Behind the Wall of Sleep', 220, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1142, 'N.I.B.', 370, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1143, 'Evil Woman', 200, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1144, 'Sleeping Village', 220, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1145, 'Warning', 620, 1014, 1022, 0, '1970-02-13', '', NULL, 0),
+(1146, 'My Own Summer (Shove It)', 220, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1147, 'Lhabia', 240, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1148, 'Mascara', 240, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1149, 'Around the Fur', 220, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1150, 'Rickets', 200, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1151, 'Be Quiet and Drive (Far Away)', 300, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1152, 'Lotion', 200, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1153, 'Dai the Flu', 250, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1154, 'Headup', 330, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1155, 'MX', 280, 1018, 1023, 0, '1997-10-28', '', NULL, 0),
+(1156, 'Intro', 60, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1157, 'Last Living Souls', 200, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1158, 'Kids with Guns', 230, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1159, 'O Green World', 270, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1160, 'Dirty Harry', 230, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1161, 'Feel Good Inc.', 220, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1162, 'El Mañana', 240, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1163, 'Every Planet We Reach Is Dead', 290, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1164, 'November Has Come', 170, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1165, 'All Alone', 200, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1166, 'White Light', 140, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1167, 'DARE', 240, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1168, 'Fire Coming Out of the Monkey\'s Head', 190, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1169, 'Don\'t Get Lost in Heaven', 120, 1019, 1024, 0, '2005-05-11', '', NULL, 0),
+(1170, 'Demon Days', 270, 1019, 1024, 0, '2005-05-11', '', NULL, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `historial_reproduccion`
+--
+
+CREATE TABLE `historial_reproduccion` (
+  `id_reproduccion` bigint(20) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `id_cancion` int(11) NOT NULL,
+  `fecha_reproduccion` datetime DEFAULT current_timestamp(),
+  `duracion_escuchada` int(11) DEFAULT NULL,
+  `dispositivo` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id_reproduccion`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `historial_reproduccion_archivo`
+--
+
+CREATE TABLE `historial_reproduccion_archivo` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id_reproduccion` bigint(20) DEFAULT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `id_cancion` int(11) NOT NULL,
+  `fecha_reproduccion` datetime DEFAULT NULL,
+  `duracion_escuchada` int(11) DEFAULT NULL,
+  `dispositivo` varchar(100) DEFAULT NULL
+,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `playlist`
+--
+
+CREATE TABLE `playlist` (
+  `id_playlist` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre_playlist` varchar(255) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `fecha_creacion` datetime DEFAULT current_timestamp(),
+  `privada` tinyint(1) DEFAULT 0,
+  `portada` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id_playlist`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `playlist`
+--
+
+INSERT INTO `playlist` (`id_playlist`, `nombre_playlist`, `id_usuario`, `descripcion`, `fecha_creacion`, `privada`, `portada`) VALUES
+(6, 'test', 13, 'esto es una playlist', '2025-11-07 11:00:03', 0, NULL),
+(7, 'test priv', 13, 'esto debe ser privado', '2025-11-07 11:00:17', 1, NULL),
+(8, 'Mis Fav', 16, '', '2025-11-21 08:10:32', 0, NULL),
+(3006, 'Metal Essentials', 13, 'Heavy riffs across four decades.', '2024-02-01 10:00:00', 0, NULL),
+(3007, '90s Alternative', 13, 'Grunge, britpop and the fur.', '2024-05-14 22:30:00', 0, NULL),
+(3008, 'Eclectic Mix', 13, 'A little bit of everything.', '2024-07-02 17:45:00', 0, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `playlist_cancion`
+--
+
+CREATE TABLE `playlist_cancion` (
+  `id_playlist` int(11) NOT NULL AUTO_INCREMENT,
+  `id_cancion` int(11) NOT NULL,
+  `orden` int(11) NOT NULL,
+  `fecha_agregado` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_playlist`,`id_cancion`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `playlist_cancion`
+--
+
+INSERT INTO `playlist_cancion` (`id_playlist`, `id_cancion`, `orden`, `fecha_agregado`) VALUES
+(6, 10, 1, '2025-11-21 08:07:28'),
+(8, 10, 1, '2025-11-21 08:10:38'),
+(3006, 1043, 1, '2024-02-01 10:00:00'),
+(3006, 1046, 2, '2024-02-01 10:00:00'),
+(3006, 1139, 3, '2024-02-01 10:00:00'),
+(3006, 1118, 4, '2024-02-01 10:00:00'),
+(3006, 1124, 5, '2024-02-01 10:00:00'),
+(3006, 1103, 6, '2024-02-01 10:00:00'),
+(3006, 1105, 7, '2024-02-01 10:00:00'),
+(3006, 1081, 8, '2024-02-01 10:00:00'),
+(3006, 1098, 9, '2024-02-01 10:00:00'),
+(3006, 1063, 10, '2024-02-01 10:00:00'),
+(3007, 1127, 1, '2024-05-14 22:30:00'),
+(3007, 1129, 2, '2024-05-14 22:30:00'),
+(3007, 1135, 3, '2024-05-14 22:30:00'),
+(3007, 1032, 4, '2024-05-14 22:30:00'),
+(3007, 1036, 5, '2024-05-14 22:30:00'),
+(3007, 1040, 6, '2024-05-14 22:30:00'),
+(3007, 1146, 7, '2024-05-14 22:30:00'),
+(3007, 1151, 8, '2024-05-14 22:30:00'),
+(3007, 1154, 9, '2024-05-14 22:30:00'),
+(3008, 1161, 1, '2024-07-02 17:45:00'),
+(3008, 1167, 2, '2024-07-02 17:45:00'),
+(3008, 1170, 3, '2024-07-02 17:45:00'),
+(3008, 1042, 4, '2024-07-02 17:45:00'),
+(3008, 1041, 5, '2024-07-02 17:45:00'),
+(3008, 1087, 6, '2024-07-02 17:45:00'),
+(3008, 1090, 7, '2024-07-02 17:45:00'),
+(3008, 1138, 8, '2024-07-02 17:45:00'),
+(3008, 1126, 9, '2024-07-02 17:45:00'),
+(3008, 1155, 10, '2024-07-02 17:45:00');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `recomendaciones`
+--
+
+CREATE TABLE `recomendaciones` (
+  `id_recomendacion` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `id_cancion` int(11) NOT NULL,
+  `puntuacion` decimal(3,2) DEFAULT NULL,
+  `fecha_recomendacion` datetime DEFAULT current_timestamp(),
+  `algoritmo` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id_recomendacion`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `seguidores`
+--
+
+CREATE TABLE `seguidores` (
+  `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario_seguido` int(11) NOT NULL,
+  `fecha_seguimiento` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_usuario`,`id_usuario_seguido`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuario`
+--
+
+CREATE TABLE `usuario` (
+  `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `salt` varchar(32) NOT NULL,
+  `fecha_registro` date NOT NULL,
+  `tipo_cuenta` enum('User','Admin') DEFAULT 'User',
+  `fecha_nacimiento` date DEFAULT NULL,
+  `ultima_conexion` datetime DEFAULT NULL,
+  `pais` varchar(100) DEFAULT NULL,
+  `version_row` int(11) DEFAULT 1,
+  PRIMARY KEY (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuario`
+--
+
+INSERT INTO `usuario` (`id_usuario`, `nombre`, `email`, `password_hash`, `salt`, `fecha_registro`, `tipo_cuenta`, `fecha_nacimiento`, `ultima_conexion`, `pais`, `version_row`) VALUES
+(13, 'Alejandro Rodriguez', 'test@email.com', '$2y$10$HTqezdHyRuZDdaeoUiXCpeXAAIw/aUE08d0COeaU6AQn7y8sQX10i', '', '2025-11-07', 'Admin', '1990-01-01', '2025-11-21 07:59:28', 'México', 1),
+(16, 'Sara Mendoza', 'user@email.com', '$2y$10$1Qd77akWpHd1tVczSIZeH.j6uF9OKxPfdoUZ8RL7UrMhSpcV78GxG', '', '2025-11-19', 'User', '1995-04-12', '2025-11-21 08:08:49', 'España', 1);
+
+--
+-- Disparadores `usuario`
+--
+DELIMITER $$
+CREATE TRIGGER `actualizar_ultima_conexion` BEFORE UPDATE ON `usuario` FOR EACH ROW BEGIN
+    IF NEW.version_row != OLD.version_row THEN
+        SET NEW.ultima_conexion = NOW();
+    END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `vista_artistas_populares`
+-- (Véase abajo para la vista actual)
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `vista_canciones_populares`
+-- (Véase abajo para la vista actual)
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `vista_historial_completo`
+-- (Véase abajo para la vista actual)
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `vista_playlists_usuario`
+-- (Véase abajo para la vista actual)
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `vista_artistas_populares`
+--
+DROP TABLE IF EXISTS `vista_artistas_populares`;
+
+CREATE ALGORITHM=UNDEFINED  SQL SECURITY INVOKER VIEW `vista_artistas_populares`  AS SELECT `a`.`id_artista` AS `id_artista`, `a`.`nombre_artista` AS `nombre_artista`, `a`.`verificado` AS `verificado`, `a`.`reproducciones_totales` AS `reproducciones_totales`, count(distinct `c`.`id_cancion`) AS `total_canciones`, count(distinct `asg`.`id_usuario`) AS `total_seguidores` FROM ((`artista` `a` left join `cancion` `c` on(`a`.`id_artista` = `c`.`id_artista`)) left join `artista_seguido` `asg` on(`a`.`id_artista` = `asg`.`id_artista`)) GROUP BY `a`.`id_artista` ORDER BY `a`.`reproducciones_totales` DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `vista_canciones_populares`
+--
+DROP TABLE IF EXISTS `vista_canciones_populares`;
+
+CREATE ALGORITHM=UNDEFINED  SQL SECURITY INVOKER VIEW `vista_canciones_populares`  AS SELECT `c`.`id_cancion` AS `id_cancion`, `c`.`titulo` AS `titulo`, `a`.`nombre_artista` AS `nombre_artista`, `al`.`titulo` AS `album`, `c`.`popularidad` AS `popularidad`, `c`.`duracion` AS `duracion` FROM ((`cancion` `c` join `artista` `a` on(`c`.`id_artista` = `a`.`id_artista`)) left join `album` `al` on(`c`.`id_album` = `al`.`id_album`)) ORDER BY `c`.`popularidad` DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `vista_historial_completo`
+--
+DROP TABLE IF EXISTS `vista_historial_completo`;
+
+CREATE ALGORITHM=UNDEFINED  SQL SECURITY INVOKER VIEW `vista_historial_completo`  AS SELECT `historial_reproduccion`.`id_reproduccion` AS `id_reproduccion`, `historial_reproduccion`.`id_usuario` AS `id_usuario`, `historial_reproduccion`.`id_cancion` AS `id_cancion`, `historial_reproduccion`.`fecha_reproduccion` AS `fecha_reproduccion`, `historial_reproduccion`.`duracion_escuchada` AS `duracion_escuchada`, `historial_reproduccion`.`dispositivo` AS `dispositivo` FROM `historial_reproduccion`union all select `historial_reproduccion_archivo`.`id_reproduccion` AS `id_reproduccion`,`historial_reproduccion_archivo`.`id_usuario` AS `id_usuario`,`historial_reproduccion_archivo`.`id_cancion` AS `id_cancion`,`historial_reproduccion_archivo`.`fecha_reproduccion` AS `fecha_reproduccion`,`historial_reproduccion_archivo`.`duracion_escuchada` AS `duracion_escuchada`,`historial_reproduccion_archivo`.`dispositivo` AS `dispositivo` from `historial_reproduccion_archivo`  ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `vista_playlists_usuario`
+--
+DROP TABLE IF EXISTS `vista_playlists_usuario`;
+
+CREATE ALGORITHM=UNDEFINED  SQL SECURITY INVOKER VIEW `vista_playlists_usuario`  AS SELECT `p`.`id_playlist` AS `id_playlist`, `p`.`nombre_playlist` AS `nombre_playlist`, `p`.`descripcion` AS `descripcion`, `u`.`nombre` AS `usuario_creador`, count(`pc`.`id_cancion`) AS `total_canciones`, `p`.`fecha_creacion` AS `fecha_creacion` FROM ((`playlist` `p` join `usuario` `u` on(`p`.`id_usuario` = `u`.`id_usuario`)) left join `playlist_cancion` `pc` on(`p`.`id_playlist` = `pc`.`id_playlist`)) GROUP BY `p`.`id_playlist` ;
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `album`
+--
+ALTER TABLE `album`  ADD KEY `id_artista` (`id_artista`),
+  ADD KEY `idx_titulo` (`titulo`),
+  ADD KEY `idx_fecha_lanzamiento` (`fecha_lanzamiento`);
+
+--
+-- Indices de la tabla `artista`
+--
+ALTER TABLE `artista`  ADD KEY `idx_nombre_artista` (`nombre_artista`),
+  ADD KEY `idx_verificado` (`verificado`);
+
+--
+-- Indices de la tabla `artista_seguido`
+--
+ALTER TABLE `artista_seguido`  ADD KEY `id_artista` (`id_artista`);
+
+--
+-- Indices de la tabla `cancion`
+--
+ALTER TABLE `cancion`  ADD KEY `id_album` (`id_album`),
+  ADD KEY `idx_titulo` (`titulo`),
+  ADD KEY `idx_popularidad` (`popularidad`),
+  ADD KEY `idx_artista` (`id_artista`);
+ALTER TABLE `cancion` ADD FULLTEXT KEY `idx_busqueda` (`titulo`);
+
+--
+-- Indices de la tabla `historial_reproduccion`
+--
+ALTER TABLE `historial_reproduccion`  ADD KEY `id_cancion` (`id_cancion`),
+  ADD KEY `idx_usuario_fecha` (`id_usuario`,`fecha_reproduccion`),
+  ADD KEY `idx_fecha_reproduccion` (`fecha_reproduccion`);
+
+--
+-- Indices de la tabla `historial_reproduccion_archivo`
+--
+ALTER TABLE `historial_reproduccion_archivo`
+  ADD KEY `idx_archivo_usuario` (`id_usuario`),
+  ADD KEY `idx_archivo_fecha` (`fecha_reproduccion`);
+
+--
+-- Indices de la tabla `playlist`
+--
+ALTER TABLE `playlist`  ADD KEY `idx_usuario` (`id_usuario`),
+  ADD KEY `idx_nombre` (`nombre_playlist`);
+
+--
+-- Indices de la tabla `playlist_cancion`
+--
+ALTER TABLE `playlist_cancion`  ADD KEY `id_cancion` (`id_cancion`),
+  ADD KEY `idx_orden` (`orden`);
+
+--
+-- Indices de la tabla `recomendaciones`
+--
+ALTER TABLE `recomendaciones`  ADD KEY `id_cancion` (`id_cancion`),
+  ADD KEY `idx_usuario_algoritmo` (`id_usuario`,`algoritmo`),
+  ADD KEY `idx_fecha_recomendacion` (`fecha_recomendacion`);
+
+--
+-- Indices de la tabla `seguidores`
+--
+ALTER TABLE `seguidores`  ADD KEY `id_usuario_seguido` (`id_usuario_seguido`),
+  ADD KEY `idx_fecha_seguimiento` (`fecha_seguimiento`);
+
+--
+-- Indices de la tabla `usuario`
+--
+ALTER TABLE `usuario`  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_email` (`email`),
+  ADD KEY `idx_tipo_cuenta` (`tipo_cuenta`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `album`
+--
+
+--
+-- AUTO_INCREMENT de la tabla `artista`
+--
+
+--
+-- AUTO_INCREMENT de la tabla `cancion`
+--
+
+--
+-- AUTO_INCREMENT de la tabla `historial_reproduccion`
+--
+ALTER TABLE `historial_reproduccion`
+  MODIFY `id_reproduccion` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `playlist`
+--
+
+--
+-- AUTO_INCREMENT de la tabla `recomendaciones`
+--
+
+--
+-- AUTO_INCREMENT de la tabla `usuario`
+--
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `album`
+--
+ALTER TABLE `album`
+  ADD CONSTRAINT `album_ibfk_1` FOREIGN KEY (`id_artista`) REFERENCES `artista` (`id_artista`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `artista_seguido`
+--
+ALTER TABLE `artista_seguido`
+  ADD CONSTRAINT `artista_seguido_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE,
+  ADD CONSTRAINT `artista_seguido_ibfk_2` FOREIGN KEY (`id_artista`) REFERENCES `artista` (`id_artista`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `cancion`
+--
+ALTER TABLE `cancion`
+  ADD CONSTRAINT `cancion_ibfk_1` FOREIGN KEY (`id_artista`) REFERENCES `artista` (`id_artista`) ON DELETE CASCADE,
+  ADD CONSTRAINT `cancion_ibfk_2` FOREIGN KEY (`id_album`) REFERENCES `album` (`id_album`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `historial_reproduccion`
+--
+ALTER TABLE `historial_reproduccion`
+  ADD CONSTRAINT `historial_reproduccion_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE,
+  ADD CONSTRAINT `historial_reproduccion_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `cancion` (`id_cancion`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `playlist`
+--
+ALTER TABLE `playlist`
+  ADD CONSTRAINT `playlist_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `playlist_cancion`
+--
+ALTER TABLE `playlist_cancion`
+  ADD CONSTRAINT `playlist_cancion_ibfk_1` FOREIGN KEY (`id_playlist`) REFERENCES `playlist` (`id_playlist`) ON DELETE CASCADE,
+  ADD CONSTRAINT `playlist_cancion_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `cancion` (`id_cancion`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `recomendaciones`
+--
+ALTER TABLE `recomendaciones`
+  ADD CONSTRAINT `recomendaciones_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE,
+  ADD CONSTRAINT `recomendaciones_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `cancion` (`id_cancion`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `seguidores`
+--
+ALTER TABLE `seguidores`
+  ADD CONSTRAINT `seguidores_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE,
+  ADD CONSTRAINT `seguidores_ibfk_2` FOREIGN KEY (`id_usuario_seguido`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE;
+
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
