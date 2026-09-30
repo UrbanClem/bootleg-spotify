@@ -1,6 +1,17 @@
 node_modules
 npm-debug.log
 .env
-uploads
+
+# The Dockerfile itself is not needed at runtime.
 Dockerfile
 .dockerignore
+
+# NOTE: do NOT add "uploads" here.
+#
+# server/uploads/audio holds the catalogue's audio files, which are committed to
+# git so they exist in the build context. Excluding them here meant the image
+# shipped without any audio at all: the directories were still created at boot
+# by the mkdirSync in server.js, but empty, so every track 404'd.
+#
+# Anything genuinely runtime-only belongs under a directory that is not
+# committed, rather than being filtered out here.
