@@ -494,7 +494,8 @@ export default {
   },
 
   demo: {
-    audioLater: 'Song audio will be added later — this demo has titles only.',
+    syntheticNotice:
+      'Demo build: all artists, albums and songs are fictional, and each track is a short synthesised tone rather than a real recording.',
     dismiss: 'Dismiss'
   },
 

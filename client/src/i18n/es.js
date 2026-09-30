@@ -481,7 +481,8 @@ export default {
   },
 
   demo: {
-    audioLater: 'El audio de las canciones se agregará después — esta demo solo tiene títulos.',
+    syntheticNotice:
+      'Versión de demostración: todos los artistas, álbumes y canciones son ficticios, y cada pista es un tono sintetizado corto en lugar de una grabación real.',
     dismiss: 'Cerrar'
   },
 

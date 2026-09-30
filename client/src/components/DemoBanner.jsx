@@ -4,11 +4,11 @@ import { useI18n } from '../i18n';
 const DISMISSED_KEY = 'bootleg.demo.bannerDismissed';
 
 /**
- * Temporary notice shown only in the demo build.
+ * Notice shown only in the demo build.
  *
- * The published demo has no audio files - every track is a title - so visitors
- * need to know up front that pressing play will not produce sound. Dismissal is
- * remembered for the session.
+ * The catalogue and the audio are both generated rather than licensed, so
+ * visitors should know the tracks are synthesised tones and not real
+ * recordings. Dismissal is remembered for the session.
  */
 export default function DemoBanner() {
   const { t } = useI18n();
@@ -25,7 +25,7 @@ export default function DemoBanner() {
 
   return (
     <div className="demo-banner" role="note">
-      <span className="demo-banner-text">{t('demo.audioLater')}</span>
+      <span className="demo-banner-text">{t('demo.syntheticNotice')}</span>
       <button
         type="button"
         className="demo-banner-close"

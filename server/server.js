@@ -62,53 +62,10 @@ app.get('/api/version', (req, res) => {
         // Directory missing entirely.
     }
 
-    // Where did the process actually start? Render clones the whole repo and
-    // then changes into the configured Root Directory, so both the app dir and
-    // the repo root are worth reporting.
-    const repoRoot = path.resolve(__dirname, '..');
-    const ls = (dir) => {
-        try {
-            return fs.readdirSync(dir).filter((f) => f !== 'node_modules').slice(0, 25);
-        } catch {
-            return null;
-        }
-    };
-    const countAudio = (dir) => {
-        try {
-            return fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.wav')).length;
-        } catch {
-            return null;
-        }
-    };
-
     res.json({
         commit: process.env.RENDER_GIT_COMMIT || null,
-        app_dir: __dirname,
-        app_dir_listing: ls(__dirname),
-        repo_root_listing: ls(repoRoot),
-        audio_wav_counts: {
-            'uploads/audio': countAudio(audioDir),
-            '../uploads/audio': countAudio(path.join(repoRoot, 'uploads', 'audio')),
-            '../server/uploads/audio': countAudio(path.join(repoRoot, 'server', 'uploads', 'audio'))
-        },
         audio_file_count: audioFiles.length,
-        sample_audio_files: audioFiles.slice(0, 5),
-        probes: [
-            '/opt/render/project/src',
-            '/opt/render/project/src/server',
-            '/opt/render/project/src/server/uploads/audio',
-            '/app/uploads',
-            '/app/uploads/audio',
-            '/app/server',
-            '/repo',
-            '/workspace',
-            '/src'
-        ].map((p) => ({
-            path: p,
-            exists: fs.existsSync(p),
-            listing: ls(p),
-            wavs: countAudio(p)
-        }))
+        sample_audio_files: audioFiles.slice(0, 5)
     });
 });
 
