@@ -480,6 +480,11 @@ export default {
     server_error: 'Algo salió mal'
   },
 
+  demo: {
+    audioLater: 'El audio de las canciones se agregará después — esta demo solo tiene títulos.',
+    dismiss: 'Cerrar'
+  },
+
   error: {
     generic: 'Algo salió mal. Inténtalo de nuevo.'
   }

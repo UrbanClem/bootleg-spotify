@@ -1366,3 +1366,42 @@ select.input {
     font-weight: 700;
     letter-spacing: -0.04em;
 }
+/* Demo-mode notice: no audio in the published build. */
+.demo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 44px 10px 16px;
+    background: var(--accent, #1db954);
+    color: #08130c;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+    z-index: 60;
+}
+
+.demo-banner-text {
+    text-align: center;
+}
+
+.demo-banner-close {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0.7;
+}
+
+.demo-banner-close:hover {
+    opacity: 1;
+}
+

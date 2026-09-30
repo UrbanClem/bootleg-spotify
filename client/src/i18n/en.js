@@ -493,6 +493,11 @@ export default {
     server_error: 'Something went wrong'
   },
 
+  demo: {
+    audioLater: 'Song audio will be added later — this demo has titles only.',
+    dismiss: 'Dismiss'
+  },
+
   error: {
     generic: 'Something went wrong. Please try again.'
   }

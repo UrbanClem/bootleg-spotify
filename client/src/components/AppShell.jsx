@@ -8,9 +8,12 @@ import PlayerBar from './PlayerBar';
 import QueuePanel from './QueuePanel';
 import Modal from './Modal';
 import { Alert } from './Feedback';
+import DemoBanner from './DemoBanner';
 import api from '../api';
 import { errorMessage } from '../utils';
 import { useI18n } from '../i18n';
+
+const DEMO = import.meta.env.VITE_DEMO === 'true';
 
 /**
  * Application chrome: sidebar, sticky top bar, scrollable outlet, optional
@@ -75,6 +78,8 @@ export default function AppShell() {
           aria-hidden="true"
         />
       )}
+
+      {DEMO && <DemoBanner />}
 
       <Sidebar onCreatePlaylist={() => setCreateOpen(true)} />
 
