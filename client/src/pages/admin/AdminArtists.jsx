@@ -5,6 +5,7 @@ import { Alert, EmptyState, Spinner } from '../../components/Feedback';
 import { PlusIcon, EditIcon, TrashIcon, SearchIcon, ArtistIcon } from '../../components/icons';
 import { errorMessage, toIsoDate } from '../../utils';
 import { useI18n } from '../../i18n';
+import { artistUrl } from '../../media';
 
 const EMPTY = {
   nombre_artista: '',
@@ -327,7 +328,7 @@ function ArtistModal({ artist, onClose, onSaved }) {
           <span className="field-label">{t('field.photo')}</span>
           {artist.foto_perfil && !photoFile && (
             <img
-              src={`/uploads/artists/${artist.foto_perfil}`}
+              src={artistUrl(artist.foto_perfil)}
               alt={t('field.currentPhoto')}
               style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%' }}
             />

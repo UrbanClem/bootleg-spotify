@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
 import { useI18n } from '../i18n';
+import { imageUrl, artistUrl } from '../media';
 import Artwork from './Artwork';
 import { PlayIcon, PauseIcon, ArtistIcon, PlaylistIcon, AlbumIcon } from './icons';
 
@@ -35,7 +36,7 @@ export default function MediaCard({
   const label = title ?? item?.titulo ?? item?.nombre_artista ?? item?.nombre_playlist ?? '';
   const sub = subtitle ?? item?.nombre_artista ?? '';
   const art = item?.portada ?? item?.foto_perfil ?? null;
-  const artUrl = art ? `/uploads/${kind === 'artist' ? 'artists' : 'images'}/${art}` : null;
+  const artUrl = kind === 'artist' ? artistUrl(art) : imageUrl(art);
   const key = seed ?? `${kind}-${item?.id_album ?? item?.id_artista ?? item?.id_playlist ?? label}`;
 
   const isCurrent = currentSong && item?.id_cancion === currentSong.id_cancion;

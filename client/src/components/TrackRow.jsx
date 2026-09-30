@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
 import { useI18n } from '../i18n';
+import { imageUrl } from '../media';
 import Artwork from './Artwork';
 import {
   PlayIcon,
@@ -50,7 +51,7 @@ export default function TrackRow({
   };
 
   const cover = song.portada_album
-    ? `/uploads/images/${song.portada_album}`
+    ? imageUrl(song.portada_album)
     : null;
 
   const explicit = song.explicit === 1 || song.explicit === true;

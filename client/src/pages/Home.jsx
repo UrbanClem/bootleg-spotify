@@ -10,6 +10,7 @@ import { Alert, Spinner, EmptyState } from '../components/Feedback';
 import { MusicIcon, PlaylistIcon, PlayIcon, SearchIcon } from '../components/icons';
 import { greetingKey, shuffle, errorMessage } from '../utils';
 import { useI18n } from '../i18n';
+import { imageUrl } from '../media';
 
 /**
  * Landing page. Layout follows Spotify: a grid of shortcut tiles, then shelves
@@ -123,7 +124,7 @@ export default function Home() {
           <div className="card">
             <div className="card-artwork-wrap">
               <Artwork
-                src={song.portada_album ? `/uploads/images/${song.portada_album}` : null}
+                src={imageUrl(song.portada_album)}
                 alt={song.titulo}
                 seed={song.id_album ?? song.titulo}
               />
@@ -185,7 +186,7 @@ export default function Home() {
                     aria-label={t('track.play', { title: song.titulo })}
                   >
                     <Artwork
-                      src={song.portada_album ? `/uploads/images/${song.portada_album}` : null}
+                      src={imageUrl(song.portada_album)}
                       alt=""
                       seed={song.id_album ?? song.titulo}
                       icon={MusicIcon}

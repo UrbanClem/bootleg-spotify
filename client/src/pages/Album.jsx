@@ -93,7 +93,7 @@ export default function Album() {
         kindLabel={t('kind.album')}
         title={album.titulo}
         tint={heroTint(album.id_album)}
-        art={album.portada ? `/uploads/images/${album.portada}` : null}
+        art={album.portada}
         meta={meta}
       />
 

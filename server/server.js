@@ -47,6 +47,30 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Bootleg Spotify API is running' });
 });
 
+// Deployment diagnostics.
+//
+// Render's filesystem is ephemeral and the upload directory ships from git, so
+// "the audio 404s" is usually one of two things: the container is running an
+// older commit, or the files never made it into the build. This endpoint
+// reports which, without needing shell access to the host.
+app.get('/api/version', (req, res) => {
+    const audioDir = path.join(__dirname, 'uploads', 'audio');
+    let audioFiles = [];
+    try {
+        audioFiles = fs.readdirSync(audioDir).filter((f) => !f.startsWith('.'));
+    } catch {
+        // Directory missing entirely.
+    }
+    res.json({
+        commit: process.env.RENDER_GIT_COMMIT || null,
+        audio_dir_exists: fs.existsSync(audioDir),
+        audio_file_count: audioFiles.length,
+        // A couple of names help spot rename/encoding mismatches between the
+        // database and the files on disk.
+        sample_audio_files: audioFiles.slice(0, 5)
+    });
+});
+
 // Error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);

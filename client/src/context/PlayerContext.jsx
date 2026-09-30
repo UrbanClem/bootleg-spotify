@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { audioUrl } from '../media';
 
 const PlayerContext = createContext();
 
@@ -50,7 +51,7 @@ export function PlayerProvider({ children }) {
             return;
         }
 
-        audio.src = `/uploads/audio/${song.archivo_audio}`;
+        audio.src = audioUrl(song.archivo_audio);
         audio
             .play()
             .then(() => setIsPlaying(true))

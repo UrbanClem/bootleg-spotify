@@ -3,6 +3,7 @@ import { usePlayer } from '../context/PlayerContext';
 import Artwork from './Artwork';
 import { CloseIcon, MusicIcon } from './icons';
 import { useI18n } from '../i18n';
+import { imageUrl } from '../media';
 
 function QueueEntry({ song, index, playing, onSelect }) {
   const { t } = useI18n();
@@ -15,7 +16,7 @@ function QueueEntry({ song, index, playing, onSelect }) {
     >
       <div className="queue-item-art">
         <Artwork
-          src={song.portada_album ? `/uploads/images/${song.portada_album}` : null}
+          src={imageUrl(song.portada_album)}
           alt=""
           seed={song.id_album ?? song.titulo}
           icon={MusicIcon}
@@ -62,7 +63,7 @@ export default function QueuePanel({ onClose }) {
               <Artwork
                 src={
                   currentSong.portada_album
-                    ? `/uploads/images/${currentSong.portada_album}`
+                    ? imageUrl(currentSong.portada_album)
                     : null
                 }
                 alt=""

@@ -83,7 +83,7 @@ export default function Artist() {
         kindLabel={t('kind.artist')}
         title={artist.nombre_artista}
         tint={heroTint(artist.id_artista)}
-        art={artist.foto_perfil ? `/uploads/artists/${artist.foto_perfil}` : null}
+        art={artist.foto_perfil}
         round
         meta={
           artist.seguidores ? (

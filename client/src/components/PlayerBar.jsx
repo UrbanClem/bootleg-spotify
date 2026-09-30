@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
 import { useI18n } from '../i18n';
+import { imageUrl } from '../media';
 import Artwork from './Artwork';
 import Slider from './Slider';
 import {
@@ -61,7 +62,7 @@ export default function PlayerBar({ onToggleQueue, queueOpen }) {
           <Artwork
             src={
               currentSong.portada_album
-                ? `/uploads/images/${currentSong.portada_album}`
+                ? imageUrl(currentSong.portada_album)
                 : null
             }
             alt=""

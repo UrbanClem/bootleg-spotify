@@ -10,6 +10,7 @@ import { DetailHero, DetailActions, DetailStats } from '../components/DetailPage
 import { EmptyState, Spinner, Alert } from '../components/Feedback';
 import { PlaylistIcon, EditIcon, TrashIcon, PlayIcon, PlusIcon, MusicIcon, MoreIcon } from '../components/icons';
 import { heroTint, errorMessage, formatDuration } from '../utils';
+import { imageUrl } from '../media';
 import { useI18n } from '../i18n';
 
 export default function Playlist() {
@@ -95,7 +96,7 @@ export default function Playlist() {
         kindLabel={t('kind.playlist')}
         title={playlist.nombre_playlist}
         tint={heroTint(playlist.id_playlist)}
-        art={playlist.portada ? `/uploads/images/${playlist.portada}` : null}
+        art={playlist.portada}
         note={playlist.descripcion}
         meta={
           <>
@@ -421,7 +422,7 @@ function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
             <div key={song.id_cancion} className="track-row" style={{ gridTemplateColumns: '40px 1fr auto' }}>
               <div className="track-art">
                 <Artwork
-                  src={song.portada_album ? `/uploads/images/${song.portada_album}` : null}
+                  src={imageUrl(song.portada_album)}
                   alt=""
                   seed={song.id_album ?? song.titulo}
                 />

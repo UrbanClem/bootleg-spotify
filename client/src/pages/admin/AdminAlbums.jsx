@@ -5,6 +5,7 @@ import { Alert, EmptyState, Spinner } from '../../components/Feedback';
 import { PlusIcon, EditIcon, TrashIcon, SearchIcon, AlbumIcon } from '../../components/icons';
 import { errorMessage, toIsoDate } from '../../utils';
 import { useI18n } from '../../i18n';
+import { imageUrl } from '../../media';
 
 const EMPTY = {
   titulo: '',
@@ -334,7 +335,7 @@ function AlbumModal({ album, artists, onClose, onSaved }) {
           <span className="field-label">{t('field.cover')}</span>
           {album.portada && !coverFile && (
             <img
-              src={`/uploads/images/${album.portada}`}
+              src={imageUrl(album.portada)}
               alt={t('field.currentCover')}
               style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 4 }}
             />

@@ -7,6 +7,7 @@ import {
 } from '../../components/icons';
 import { errorMessage, formatDuration, toIsoDate } from '../../utils';
 import { useI18n } from '../../i18n';
+import { audioUrl } from '../../media';
 
 const EMPTY = {
   titulo: '',
@@ -164,7 +165,7 @@ export default function AdminSongs() {
                       {song.archivo_audio ? (
                         <a
                           className="tag tag--green"
-                          href={`/uploads/audio/${song.archivo_audio}`}
+                          href={audioUrl(song.archivo_audio)}
                           target="_blank"
                           rel="noreferrer"
                         >
