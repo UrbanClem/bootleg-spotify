@@ -92,7 +92,23 @@ app.get('/api/version', (req, res) => {
             '../server/uploads/audio': countAudio(path.join(repoRoot, 'server', 'uploads', 'audio'))
         },
         audio_file_count: audioFiles.length,
-        sample_audio_files: audioFiles.slice(0, 5)
+        sample_audio_files: audioFiles.slice(0, 5),
+        probes: [
+            '/opt/render/project/src',
+            '/opt/render/project/src/server',
+            '/opt/render/project/src/server/uploads/audio',
+            '/app/uploads',
+            '/app/uploads/audio',
+            '/app/server',
+            '/repo',
+            '/workspace',
+            '/src'
+        ].map((p) => ({
+            path: p,
+            exists: fs.existsSync(p),
+            listing: ls(p),
+            wavs: countAudio(p)
+        }))
     });
 });
 
